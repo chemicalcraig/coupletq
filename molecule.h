@@ -6,15 +6,16 @@ using namespace std;
 
 class Molecule {
   public:
-  int nstates;
-  int nao,nbasis;
-  int nmo;
-  int nroots;
-  int nocc,nuocc;
-  double dipx,dipy,dipz;
-  int nlindep;
-  string excMethod;
-  double *activeCharges;
+  double groundenergy; //ground state energy in a.u.
+  int nstates; //number of excited states to consider
+  int nao,nbasis; //number of AO's and eigenvectors
+  int nmo; //Number of orthonormal MO's
+  int nroots; //Number of TDDFT roots
+  int nocc,nuocc; //Number of occupied and unoccupied MO's
+  double dipx,dipy,dipz; //transition dipole moment vector
+  int nlindep; //number of linearly dependent eigenvectors
+  string excMethod; //excitation method {CIS/RPA}
+  double *activeCharges; //transition charges (?)
 
   double *ci; //ci coefficients
   int* nbasisatom; //number of basis functions on an atom

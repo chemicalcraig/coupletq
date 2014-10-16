@@ -202,7 +202,7 @@ bool parseLog(string str, Molecule *mol) {
     int natoms=0;
     int nbasis=0;
     bool tddftstack = true;
-
+    infile>>ws;
     while(infile.getline(tempc, 1000)) {
       string temps(tempc);
       int current = infile.tellg();
@@ -212,7 +212,7 @@ bool parseLog(string str, Molecule *mol) {
         temps.compare(0,5,tddft_task_str2,0,5) == 0 ||
         temps.compare(0,5,tddft_task_str3,0,5) == 0) &&
         tddftstack) {
-        cout<<"getting nroots"<<endl;
+        cout<<"getting nroots "<<temps<<endl;
         while (temps.compare(0,3,"end",0,3) !=0 ) {
           if (temps.compare(0,6,"nroots")==0 ||
             temps.compare(0,6,"NROOTS")==0 ||
@@ -222,6 +222,7 @@ bool parseLog(string str, Molecule *mol) {
             temps = strtok(tempc," ");
             temps = strtok(NULL," ");
             mol->setnroots(atoi(temps.c_str()));
+            cout<<mol->nroots<<endl;
             tddftstack = false;
           } //end nroots
           infile>>ws;
@@ -535,7 +536,6 @@ bool getTDDFT(string str, Molecule *mol) {
     ifstream infile;
     infile.precision(9);
     infile.open(str.c_str());
-    cout<<"Opening file: "<<str.c_str()<<endl;
 
     char tempc[1000];
     int natoms=0;
@@ -550,7 +550,7 @@ bool getTDDFT(string str, Molecule *mol) {
         temps.compare(0,5,tddft_task_str2,0,5) == 0 ||
         temps.compare(0,5,tddft_task_str3,0,5) == 0) &&
         tddftstack) {
-        cout<<"getting nroots"<<endl;
+        
         while (temps.compare(0,3,"end",0,3) !=0 ) {
           if (temps.compare(0,6,"nroots")==0 ||
             temps.compare(0,6,"NROOTS")==0 ||
@@ -566,13 +566,17 @@ bool getTDDFT(string str, Molecule *mol) {
           infile.getline(tempc,1000);
           temps = tempc;
         }
-      } //end tddft
+      } //end tddft roots
      
      if (temps.compare(0,10,tddft_str,0,10) == 0) {
-      cout<<"getting CI vectors"<<endl;
       mol->allocateMemTddft();
       
-      getnlines(infile,tempc,4,1000);
+      //Get the ground state energy
+      getnlines(infile,tempc,2,1000);
+      temps = strtok(tempc," ");
+      for (int i=0; i<3; i++) temps = strtok(NULL," ");
+      mol->groundenergy = atof(temps.c_str());
+      getnlines(infile,tempc,2,1000);
 
       for (int root=0; root<mol->nroots; root++) {
 
@@ -629,8 +633,10 @@ bool getTDDFT(string str, Molecule *mol) {
         } //end CI coeffs
       } //end nroots
     }//end tddft
-return true;
+  //return true;
+  }
 }
+
 /** Print some stuff **/
 void printStuff(Molecule *mol) {
   ofstream outfile;
@@ -645,5 +651,57 @@ void printStuff(Molecule *mol) {
   }
 }
 
+/* Get Natoms */
+int getNatoms(string filename, int nmol, Molecule *mol) {
+  ifstream infile;
+  infile.open(filename.c_str());
+  char tempc[1000];
+  infile.getline(tempc,1000);
+  string temps = strtok(tempc,": ");
+  temps = strtok(NULL,": ");
+  infile.close();
+
+  return atoi(temps.c_str());
+}
+
+/* Get the charges */
+void getCharges(string filename, int nmol, Molecule mol, int icharge, int nstates) {
+  ifstream infile;
+  infile.open(filename.c_str());
+  char tempc[1000];
+  string temps;
+  
+  //skip natoms and energy on first two lines
+  getnlines(infile,tempc,2,1000);
+  
+  for (int j=0; j<mol.natoms; j++) {
+    infile.getline(tempc,1000);
+    temps = strtok(tempc," ");
+    for (int i=0; i<2; i++) temps = strtok(NULL," ");
+    mol.atoms[j].x = atof(temps.c_str());
+    temps = strtok(NULL," ");
+    mol.atoms[j].y = atof(temps.c_str());
+    temps = strtok(NULL," ");
+    mol.atoms[j].z = atof(temps.c_str());
+    temps = strtok(NULL," ");
+    //this should change if inter-excited transitions are to 
+    //be included
+    mol.atoms[j].charges[icharge] = atof(temps.c_str());
+  }
+}
+
+int findCol(int x, const int rowrange, const int colrange) {
+  for (int i=0; i<rowrange; i++) 
+    for (int j=0; j<colrange; j++)
+      if ((i+j*rowrange) == x)
+        return j;
+}
+
+int findRow(int x, const int rowrange, const int colrange) {
+  for (int i=0; i<rowrange; i++) 
+    for (int j=0; j<colrange; j++)
+      if ((i+j*rowrange) == x)
+        return i;
+}
 
 #endif // UTIL_H

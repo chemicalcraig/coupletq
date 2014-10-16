@@ -35,7 +35,7 @@ const string str_Atom[] = { " X",
 ifstream comfile;
 
 //number of molecules and electronic states to consider
-int nmol, nstates;
+int nmol, nstates, natoms;
 
 //get number of atoms in a molecule
 int getNatoms(string filename, int nmol, Molecule *mol);
