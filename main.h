@@ -9,6 +9,9 @@
 #include <math.h>
 #include <vector>
 #include "util.h"
+#include "parse.h"
+#include "fret.h"
+#include "pert.h"
 using namespace std;
 
 /*****************************
@@ -34,12 +37,12 @@ const string str_Atom[] = { " X",
 //Input file
 ifstream comfile;
 
-//number of molecules and electronic states to consider
-int nmol, nstates, natoms;
+//number of molecules, electronic states to consider, atoms, and interaction order
+int nmol, nstates, natoms, interactionOrder;
 
 //get number of atoms in a molecule
 int getNatoms(string filename, int nmol, Molecule *mol);
 
-//get charges from files
-void getCharges(string filename, int nmol, Molecule mol, int nd1, int nd2);
+//This is the main molecule object
+Molecule *mol;
 #endif // MAIN_H
