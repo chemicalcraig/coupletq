@@ -15,9 +15,15 @@ class Atom {
   double tq,tqindo;
   double charge;
   double *charges;
+  double mass;
+  double pos[3];
+  double ipos[3];
 
+  void allocateCharges(const int n) {this->charges = new double[n];};
+  
   Atom();
   Atom(int nbf);
+
 };
 
 

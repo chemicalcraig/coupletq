@@ -16,6 +16,24 @@ using namespace std;
  * Functions
  * *******************************************************/
 
+/** Compute the coupling between two distributions of transition charges **/
+/** dcharge and acharge specify which transition to use **/
+double computeCoupling(Molecule mold, Molecule mola,int dcharge, int acharge) {
+  double res = 0.;
+  double interaction = 0.;
+  for (int i=0; i<mold.natoms; i++) {
+    for (int j=0; j<mola.natoms; j++) {
+      double rda2 = (mold.atoms[i].x - mola.atoms[j].x)*(mold.atoms[i].x - mola.atoms[j].x)
+                   + (mold.atoms[i].y - mola.atoms[j].y)*(mold.atoms[i].y - mola.atoms[j].y)
+                   + (mold.atoms[i].z - mola.atoms[j].z)*(mold.atoms[i].z - mola.atoms[j].z);
+      double rda = sqrt(rda2);
+      interaction = mold.atoms[i].charges[dcharge] * mola.atoms[j].charges[acharge] / rda;
+      res += interaction;
+    }
+  }
+  return res;
+}
+
 /**** Skip several lines in input file ****/
 void getnlines(ifstream &in, char *temp, int n, int length) {
   for (int i=0; i<n; i++) {
@@ -135,7 +153,7 @@ int getNatoms(string filename, int nmol, Molecule *mol) {
 }
 
 /* Get the charges */
-void getCharges(string filename, int nmol, Molecule mol, int icharge, int nstates) {
+void getCharges(string filename, int nmol, Molecule *mol, int icharge, int nstates) {
   ifstream infile;
   infile.open(filename.c_str());
   char tempc[1000];
@@ -144,19 +162,25 @@ void getCharges(string filename, int nmol, Molecule mol, int icharge, int nstate
   //skip natoms and energy on first two lines
   getnlines(infile,tempc,2,1000);
   
-  for (int j=0; j<mol.natoms; j++) {
+  for (int j=0; j<mol->natoms; j++) {
     infile.getline(tempc,1000);
     temps = strtok(tempc," ");
     for (int i=0; i<2; i++) temps = strtok(NULL," ");
-    mol.atoms[j].x = atof(temps.c_str());
+    mol->atoms[j].x = atof(temps.c_str());
+    mol->atoms[j].pos[0] = atof(temps.c_str());
+    mol->atoms[j].ipos[0] = atof(temps.c_str());
     temps = strtok(NULL," ");
-    mol.atoms[j].y = atof(temps.c_str());
+    mol->atoms[j].y = atof(temps.c_str());
+    mol->atoms[j].pos[1] = atof(temps.c_str());
+    mol->atoms[j].ipos[1] = atof(temps.c_str());
     temps = strtok(NULL," ");
-    mol.atoms[j].z = atof(temps.c_str());
+    mol->atoms[j].z = atof(temps.c_str());
+    mol->atoms[j].pos[2] = atof(temps.c_str());
+    mol->atoms[j].ipos[2] = atof(temps.c_str());
     temps = strtok(NULL," ");
     //this should change if inter-excited transitions are to 
     //be included
-    mol.atoms[j].charges[icharge] = atof(temps.c_str());
+    mol->atoms[j].charges[icharge] = atof(temps.c_str());
   }
 }
 

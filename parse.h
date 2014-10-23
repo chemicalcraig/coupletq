@@ -27,6 +27,7 @@ string tddft_task_str3="Tddft";
 string mo_analysis_str="                       DFT Final Molecular Orbital Analysis";
 string lindep_str = " !! The overlap matrix has";
 string aobas_str = "          AO basis - number of functions:";
+string com_str = " center of mass";
 
 /* Number of columns for printing of matrices */
 int ncol = 6;
@@ -297,7 +298,7 @@ bool parseLog(string str, Molecule *mol) {
               infile>>temps;
             }
       }//end vector coeffs
-
+      
       infile.seekg(current);
       infile.getline(tempc,1000);
       infile.getline(tempc,1000);
@@ -305,7 +306,7 @@ bool parseLog(string str, Molecule *mol) {
       }
     }//end MOs
 
-
+    
 /** TDDFT excited states **/
     if (temps.compare(0,10,tddft_str,0,10) == 0) {
       cout<<"getting CI vectors"<<endl;
@@ -422,44 +423,58 @@ bool getTDDFT(string str, Molecule *mol) {
         }
       } //end tddft roots
      
-     if (temps.compare(0,10,tddft_str,0,10) == 0) {
-      mol->allocateMemTddft();
-      
-      //Get the ground state energy
-      getnlines(infile,tempc,2,1000);
-      temps = strtok(tempc," ");
-      for (int i=0; i<3; i++) temps = strtok(NULL," ");
-      mol->groundenergy = atof(temps.c_str());
-      getnlines(infile,tempc,2,1000);
 
-      for (int root=0; root<mol->nroots; root++) {
-
-        infile.getline(tempc,1000);
-        temps = strtok(tempc," ");
-        for (int i=0; i<4; i++) temps = strtok(NULL," ");
-        
-        //get energy of root
-        mol->excenergy[root] = atof(temps.c_str());
-
+      //Grab COM while we're here
+      if (temps.compare(0,15,com_str,0,15) == 0) {
         getnlines(infile,tempc,2,1000);
+        temps = strtok(tempc,"=");
+        temps = strtok(NULL," ");
+        mol->com[0] = atof(temps.c_str());
+        for (int i=0; i<3; i++) temps = strtok(NULL," ");
+        mol->com[1] = atof(temps.c_str());
+        for (int i=0; i<3; i++) temps = strtok(NULL," ");
+        mol->com[2] = atof(temps.c_str());
+      }
       
-        for (int k=0; k<3; k++) {
-          temps = strtok(tempc," ");
-          temps = strtok(NULL," ");
+      //Get TDDFT information
+      if (temps.compare(0,10,tddft_str,0,10) == 0) {
+        mol->allocateMemTddft();
       
-          for (int j=0; j<3; j++) {
-            for (int i=0; i<2; i++) temps = strtok(NULL," ");
-              mol->transmoment[k+j*3+root*9] = atof(temps.c_str());
-          }
+        //Get the ground state energy
+        getnlines(infile,tempc,2,1000);
+        temps = strtok(tempc," ");
+        for (int i=0; i<3; i++) temps = strtok(NULL," ");
+        mol->groundenergy = atof(temps.c_str());
+        getnlines(infile,tempc,2,1000);
+
+        for (int root=0; root<mol->nroots; root++) {
 
           infile.getline(tempc,1000);
-        }//end trans moment
+          temps = strtok(tempc," ");
+          for (int i=0; i<4; i++) temps = strtok(NULL," ");
+        
+          //get energy of root
+          mol->excenergy[root] = atof(temps.c_str());
 
-        //get oscillator strength
-        temps = strtok(tempc," ");
-        for (int i=0; i<3; i++) temps=strtok(NULL," ");
-        mol->oscstrength[root] = atof(temps.c_str());
-        infile.getline(tempc,1000);
+          getnlines(infile,tempc,2,1000);
+      
+          for (int k=0; k<3; k++) {
+            temps = strtok(tempc," ");
+            temps = strtok(NULL," ");
+      
+            for (int j=0; j<3; j++) {
+              for (int i=0; i<2; i++) temps = strtok(NULL," ");
+                mol->transmoment[k+j*3+root*9] = atof(temps.c_str());
+            }
+
+            infile.getline(tempc,1000);
+          }//end trans moment
+
+          //get oscillator strength
+          temps = strtok(tempc," ");
+          for (int i=0; i<3; i++) temps=strtok(NULL," ");
+          mol->oscstrength[root] = atof(temps.c_str());
+          infile.getline(tempc,1000);
       
         infile.getline(tempc,1000);
         temps = tempc;
@@ -542,7 +557,7 @@ cout<<"HOMO = "<<mol->nocc<<", # virt. orb. = "<<mol->nuocc<<endl;
   return true;
 }
 
-Molecule *parseComfile(ifstream &comfile, int interactionOrder) {
+Molecule *parseComfile(ifstream &comfile) {
   
   //parse input file
   char tempc[1000];
@@ -562,7 +577,8 @@ Molecule *parseComfile(ifstream &comfile, int interactionOrder) {
   comfile.getline(tempc,1000);
   temps = strtok(tempc,":");
   temps = strtok(NULL,": ");
-  interactionOrder = atoi(temps.c_str());
+  for (int i=0; i<nmol; i++)
+    mol[i].interaction = atoi(temps.c_str());
 
   //Number of electronic states to consider
   //on each molecule
@@ -588,16 +604,15 @@ Molecule *parseComfile(ifstream &comfile, int interactionOrder) {
         mol[i].natoms = getNatoms(temps,nmol,mol);
         mol[i].atoms = new Atom[mol[i].natoms];
         cout<<"Molecule "<<i+1<<" has "<<mol[i].natoms<<" atoms"<<endl;
+        //Allocate atoms and all of their densities
+        //We use lower triangular form for the couplings
+        for (int j=0; j<mol[i].natoms; j++) {
+          //this should change if inter-excited transitions are to 
+          //be included
+          mol[i].atoms[j].allocateCharges(2*mol[i].nstates-1);// = new double[2*mol[i].nstates-1];
+        }
       }
       
-      //Allocate atoms and all of their densities
-      //We use lower triangular form for the couplings
-      for (int j=0; j<mol[i].natoms; j++) {
-        //this should change if inter-excited transitions are to 
-        //be included
-        mol[i].atoms[j].charges = new double[2*mol[i].nstates-1];
-      }
-    
       //Get the transition charges.
       //The diagonal components (j==k) are the
       //state densities, while the off diagonal
@@ -606,7 +621,7 @@ Molecule *parseComfile(ifstream &comfile, int interactionOrder) {
       //the ground state only the first column become 
       //populated with transition densities
       //We only need the lower triangle since the 
-      getCharges(temps,nmol,mol[i],icharges,mol[i].nstates);
+      getCharges(temps,nmol,&mol[i],icharges,mol[i].nstates);
     } 
   }
   

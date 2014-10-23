@@ -12,6 +12,7 @@
 #include "parse.h"
 #include "fret.h"
 #include "pert.h"
+#include "grid.h"
 using namespace std;
 
 /*****************************
@@ -45,4 +46,7 @@ int getNatoms(string filename, int nmol, Molecule *mol);
 
 //This is the main molecule object
 Molecule *mol;
+
+//exciton coupling constant
+double coupling;
 #endif // MAIN_H
