@@ -53,6 +53,7 @@ void Molecule::rotateTheta(double theta, int axis) {
       this->rotx[1+3*2] = -1.*sin(theta);
       this->rotx[2+3*1] = sin(theta);
       this->rotx[2+3*2] = cos(theta);
+      break;
     
     //y-axis
     case 2:
@@ -61,6 +62,7 @@ void Molecule::rotateTheta(double theta, int axis) {
       this->roty[0+3*2] = sin(theta);
       this->roty[2+3*0] = -1.*sin(theta);
       this->roty[2+3*2] = cos(theta);
+      break;
 
     //z-axis
     case 3:
@@ -69,6 +71,7 @@ void Molecule::rotateTheta(double theta, int axis) {
       this->rotz[1+3*0] = sin(theta);
       this->rotz[0+3*1] = -1.*sin(theta);
       this->rotz[1+3*1] = cos(theta);
+      break;
   }
 }
 
@@ -140,16 +143,19 @@ void Molecule::translate(const int which, double howmuch) {
           this->atoms[i].x += howmuch;
           this->atoms[i].pos[0] += howmuch;
         }
+      break;
     case 1: //y-axis
       for (int i=0; i<this->natoms; i++) {
           this->atoms[i].y += howmuch;
           this->atoms[i].pos[1] += howmuch;
         }
+      break;
     case 2: //z-axis
       for (int i=0; i<this->natoms; i++) {
         this->atoms[i].z += howmuch;
         this->atoms[i].pos[2] += howmuch;
       }
+      break;
   }
 }
 
@@ -175,3 +181,32 @@ void Molecule::reset(int keep) {
     //this->atoms[i].z = this->atoms[i].pos[2];
   }
 }
+
+/*******************************************
+ * Operators
+ * *****************************************/
+/********************************************
+ * Copy operator
+ */
+Molecule Molecule::operator=(const Molecule& other) {
+  this->natoms = other.natoms;
+  this->  interaction = other.interaction;
+  this->  groundenergy = other.groundenergy;
+  this->nstates = other.nstates;
+  this->nao = other.nao;
+  this->nroots = other.nroots;
+  this->nocc = other.nocc;
+  this->nuocc = other.nuocc;
+  this->dipx = other.dipx;
+  this->dipy = other.dipy;
+  this->dipz = other.dipz;
+  this-> nlindep = other.nlindep;
+  this->excMethod = other.excMethod;
+  this->activeCharges = other.activeCharges;
+
+  //Copy Atoms
+  this->atoms = other.atoms;
+  //Copy grid
+  this->grid = other.grid;
+}
+

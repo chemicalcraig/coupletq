@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <math.h>
 #include <fstream>
+
 using namespace std;
 
 class Molecule {
@@ -66,6 +67,12 @@ class Molecule {
   void allocateMemAtoms(const int na);
   void allocateMemTddft();
   void setnroots(const int n) {this->nroots=n;};
+
+  /*********************************************
+   * Operators
+   */
+  Molecule operator= (const Molecule& m);
+
 };
 
 #endif // MOLECULE_H

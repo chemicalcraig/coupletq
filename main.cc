@@ -13,11 +13,15 @@
 #include "main.h"
 
 int main(int argc, char **argv) {
+  
   //open input file
   comfile.open(argv[1]);
 
   //parse comfile and retrieve necessary data
   mol = parseComfile(comfile);
+
+  //set up printer
+  Print print(mol);
 
   //perform either a FRET or 3-body calculation
   ofstream outfile2;
@@ -39,7 +43,7 @@ int main(int argc, char **argv) {
 
 
   //move the first molecule a bit along the z-axis
-  const double trans = 3.;
+  const double trans = 4.;
   for (int i=0; i<mol[0].natoms; i++) {
     mol[0].atoms[i].z += trans;
     mol[0].atoms[i].pos[2] += trans;
@@ -68,8 +72,7 @@ int main(int argc, char **argv) {
           slip += mol[0].grid.dy;
           //angle += mol[0].grid.dtheta;
         }
-
-        for (int i=0; i<mol[0].natoms; i++) {
+          for (int i=0; i<mol[0].natoms; i++) {
           outfile3<<i<<" "<<mol[0].atoms[i].pos[0]<<" "
           <<mol[0].atoms[i].pos[1]<<" "
           <<mol[0].atoms[i].pos[2]<<endl;
@@ -83,10 +86,11 @@ int main(int argc, char **argv) {
         //mol[0].translate(2,trans+zi*mol[0].grid.dz);
         mol[0].translate(2,mol[0].grid.dz);
       }
+      break;
     case 2:
       pertCalc(mol);
-  }
-
+      break;
+    }
   return 0;
 }
 

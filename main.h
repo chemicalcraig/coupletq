@@ -13,6 +13,7 @@
 #include "fret.h"
 #include "pert.h"
 #include "grid.h"
+#include "print.h"
 using namespace std;
 
 /*****************************
