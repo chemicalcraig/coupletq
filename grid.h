@@ -10,6 +10,7 @@ class Grid {
     double thetamin, thetamax;
     int nx,ny,nz,ntheta;
 
+  void setParams(int nx,int ny,int nz,double dx,double dy,double dz,double tmax,int ntheta,double dtheta);
   Grid() {};
   ~Grid() {};
 };

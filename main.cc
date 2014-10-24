@@ -31,6 +31,7 @@ int main(int argc, char **argv) {
   /** Set up the grid data for translation/rotations
    * in the Etransfer calculation
    */
+  mol[0].grid.setParams(100,100,200,0.05,0.05,0.05,2*M_PI,100,mol[0].grid.thetamax/mol[0].grid.ntheta);
   mol[0].grid.nx = 100;
   mol[0].grid.ny = 100;
   mol[0].grid.nz = 200;

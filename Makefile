@@ -20,7 +20,7 @@ SHELL = /bin/sh
 HEADERS1 = main.h atom.h molecule.h util.h parse.h fret.h grid.h print.h
 HEADERS  = $(HEADERS1)
 
-OBJS = main.o atom.o molecule.o print.o
+OBJS = main.o atom.o molecule.o print.o grid.o
 
 #fix : fixPulses.o wpiGridParameters.o wpiInterpolation.o
 #	$(CC) fixPulses.o wpiGridParameters.o wpiInterpolation.o -o fixer $(LDFLAGS) $(CLIBS) $(CPPFLAGS)
