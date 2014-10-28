@@ -430,10 +430,13 @@ bool getTDDFT(string str, Molecule *mol) {
         temps = strtok(tempc,"=");
         temps = strtok(NULL," ");
         mol->com[0] = atof(temps.c_str());
+        mol->icom[0] = mol->com[0];
         for (int i=0; i<3; i++) temps = strtok(NULL," ");
         mol->com[1] = atof(temps.c_str());
+        mol->icom[1] = mol->com[1];
         for (int i=0; i<3; i++) temps = strtok(NULL," ");
         mol->com[2] = atof(temps.c_str());
+        mol->icom[2] = mol->com[2];
       }
       
       //Get TDDFT information

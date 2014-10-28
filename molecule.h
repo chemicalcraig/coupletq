@@ -19,7 +19,7 @@ class Molecule {
   int nmo; //Number of orthonormal MO's
   int nroots; //Number of TDDFT roots
   int nocc,nuocc; //Number of occupied and unoccupied MO's
-  double dipx,dipy,dipz; //transition dipole moment vector
+  double dipx,dipy,dipz,*idip,*dip,dipmag; //transition dipole moment vector
   int nlindep; //number of linearly dependent eigenvectors
   string excMethod; //excitation method {CIS/RPA}
   double *activeCharges; //transition charges (?)
@@ -50,7 +50,7 @@ class Molecule {
   int nx,ny,nz;
   double dx1,dx2,dx3,dy1,dy2,dy3,dz1,dz2,dz3;
   double ox,oy,oz;
-  double com[3];
+  double com[3],icom[3];
   double ***dens, ***densrad;
 
   void setnatoms(int n) {natoms = n;};

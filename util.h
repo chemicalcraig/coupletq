@@ -10,6 +10,7 @@
 #include "atom.h"
 #include "molecule.h"
 #include <iomanip>
+#include "gsl/gsl_blas.h"
 using namespace std;
 
 /********************************************************
@@ -36,6 +37,60 @@ double computeCoupling(Molecule mold, Molecule mola,int dcharge, int acharge) {
   return res;
 }
 
+/** Orientation factor between two molecules **/
+double orient(Molecule mold, Molecule mola,double *r12) {
+  
+  /** get unit vector in direction of each transition dipole vector **/
+  double dipunit1[3],dipunit2[3],temp[3];
+  for (int i=0; i<3; i++) {
+    temp[i] = mold.dip[i];// - mold.com[i];
+  }
+  mold.dipmag = cblas_ddot(3,temp,1,temp,1);
+  mola.dipmag = cblas_ddot(3,mola.dip,1,mola.dip,1);
+  for (int i=0; i<3; i++) {
+    dipunit1[i] = temp[i] / sqrt(mold.dipmag);
+    dipunit2[i] = mola.dip[i] / sqrt(mola.dipmag);
+  }
+
+  double res = cblas_ddot(3,dipunit1,1,dipunit2,1) -3* (3,dipunit1,1,r12,1)*(3,dipunit2,1,r12,1);
+ 
+  return res;
+}
+
+
+/** PDA coupling **/
+double pdaCalc(Molecule *mol, double &res) {
+  
+  //Get unit vector connecting the com's
+  double diff[3];
+  double sum=0.;
+  
+  //construct vector connecting COM's
+  for (int i=0; i<3; i++) {
+    diff[i] = mol[0].com[i] - mol[1].com[i];
+    sum += diff[i]*diff[i];
+  }
+  
+  //normalize it
+  for (int i=0; i<3; i++) {
+    diff[i] /= sqrt(sum);
+  }
+
+  /** Calculate orientation factor **/
+  double kappa = -1*orient(mol[0],mol[1],diff);
+
+  /** get unit vector in direction of each transition dipole vector **/
+  double dipunit1[3],dipunit2[3],temp[3];
+  for (int i=0; i<3; i++) {
+    temp[i] = mol[0].dip[i];// - mol[0].com[i];
+  }
+  mol[0].dipmag = cblas_ddot(3,temp,1,temp,1);
+  mol[1].dipmag = cblas_ddot(3,mol[1].dip,1,mol[1].dip,1);
+
+  res = kappa * mol[1].dipmag*mol[1].dipmag / (sum*sqrt(sum));
+  
+}
+
 /**** Skip several lines in input file ****/
 void getnlines(ifstream &in, char *temp, int n, int length) {
   for (int i=0; i<n; i++) {
@@ -45,28 +100,29 @@ void getnlines(ifstream &in, char *temp, int n, int length) {
 
 /** Calculate molecular dipole moment
  * from transition charges **/
-bool calcdip(Molecule *mol) {
+bool calcdip(Molecule &mol) {
   
   double dx = 0.;
   double dy = 0.;
   double dz = 0.;
   
-  for (int i=0; i<mol->natoms; i++) {
-    dx += mol->atoms[i].x * mol->atoms[i].tq;//indo;
-    dy += mol->atoms[i].y * mol->atoms[i].tq;//indo;
-    dz += mol->atoms[i].z * mol->atoms[i].tq;//indo;
+  for (int i=0; i<mol.natoms; i++) {
+    dx += mol.atoms[i].pos[0] * mol.atoms[i].charges[1];
+    dy += mol.atoms[i].pos[1] * mol.atoms[i].charges[1];
+    dz += mol.atoms[i].pos[2] * mol.atoms[i].charges[1];
   }
 
   dx *= ang2au;
   dy *= ang2au;
   dz *= ang2au;
 
-  mol->dipx = dx;
-  mol->dipy = dy;
-  mol->dipz = dz;
+  mol.dip[0] = dx;
+  mol.dip[1] = dy;
+  mol.dip[2] = dz;
+  mol.dipmag = sqrt(dx*dx+dy*dy+dz*dz);
   
   cout<<"Transition dipole moment: "<<dx<<" x, "<<dy<<" y, "<<dz<<" z"<<endl;
-  cout<<"Magnitude = "<<sqrt(dx*dx+dy*dy+dz*dz)/0.39345<<endl;
+  cout<<"Magnitude = "<<sqrt(dx*dx+dy*dy+dz*dz)<<endl;
   return true;
 }
 

@@ -2,6 +2,8 @@
 
 Molecule::Molecule()
 {
+  this->dip = new double[3];
+  this->idip = new double[3];
 }
 
 void Molecule::allocateMem(const int nb) {
@@ -45,8 +47,10 @@ void Molecule::allocateMemTddft() {
 
 //subroutines to rotate molecule, theta in radians
 void Molecule::rotateTheta(double theta, int axis) {
+  
   double sum = 0.;
-  double pos[3];
+  double pos[3],pos2[3],pos3[3];
+
   switch(axis) {
     //rotate about x-axis
     case 0:
@@ -78,13 +82,22 @@ void Molecule::rotateTheta(double theta, int axis) {
   for (int i=0; i<this->natoms; i++) {
     for (int j=0; j<3; j++) {
       sum = 0.;
+      double sum2 = 0.;
+      double sum3 = 0.;
       for (int k=0; k<3; k++) {
         sum += rot[j+k*3] * this->atoms[i].pos[k];
+        sum2 += rot[j+k*3] * this->com[k];
+        sum3 += rot[j+k*3] * this->dip[k];
       }
+      pos2[j] = sum2;
       pos[j] = sum;
+      pos3[j] = sum3;
     }
-    for (int j=0; j<3; j++)
+    for (int j=0; j<3; j++) {
       this->atoms[i].pos[j] = pos[j];
+      this->com[j] = pos2[j];
+      this->dip[j] = pos3[j];
+    }
   }
 }
 
@@ -118,21 +131,27 @@ void Molecule::rotateCom(double theta, double *cm) {
   this->rotmatcom[2 + 3*2 ] = cos(theta) + diff[2]*diff[2]*(1-cos(theta));
 
   //apply matrix to atomic positions
+
   for (int atms=0; atms<this->natoms; atms++) {
-    double pos[3],pos2[3];
-    pos[0] = this->atoms[atms].x;
-    pos[1] = this->atoms[atms].y;
-    pos[2] = this->atoms[atms].z;
+    double pos[3],pos2[3],pos3[3];
     for (int i=0; i<3; i++) {
-      double sum = 0.;
+      sum = 0.;
+      double sum2 = 0.;
+      double sum3 = 0.;
       for (int j=0; j<3; j++) {
-        sum += this->rotmatcom[i + 3*j] * pos[j];
+        sum += this->rotmatcom[i + 3*j] * this->atoms[atms].pos[j];
+        sum2 += this->rotmatcom[i+3*j] * this->com[j];
+        sum3 += this->rotmatcom[i+3*j] * this->dip[j];
       }
-      pos2[i] = sum;
+      pos[i] = sum;
+      pos2[i] = sum2;
+      pos3[i] = sum3;
     }
-    this->atoms[atms].pos[0] = pos2[0];
-    this->atoms[atms].pos[1] = pos2[1];
-    this->atoms[atms].pos[2] = pos2[2];
+    for (int i=0; i<3; i++) {
+      this->atoms[atms].pos[i] = pos[i];
+      this->com[i] = pos2[i];
+      this->dip[i] = pos3[i];
+    }
   }
 }
 
@@ -149,16 +168,22 @@ void Molecule::translate(const int which, double howmuch) {
       for (int i=0; i<this->natoms; i++) {
           this->atoms[i].pos[0] += howmuch;
         }
+        this->com[0] += howmuch;
+        this->dip[0] += howmuch;
       break;
     case 1: //y-axis
       for (int i=0; i<this->natoms; i++) {
           this->atoms[i].pos[1] += howmuch;
         }
+        this->com[1] += howmuch;
+        this->dip[1] += howmuch;
       break;
     case 2: //z-axis
       for (int i=0; i<this->natoms; i++) {
         this->atoms[i].pos[2] += howmuch;
       }
+      this->com[2] += howmuch;
+      this->dip[2] += howmuch;
       break;
   }
 }
@@ -167,28 +192,34 @@ void Molecule::resetall() {
   for (int i=0; i<this->natoms; i++) {
     for (int j=0; j<3; j++) {
       this->atoms[i].pos[j] = this->atoms[i].ipos[j];
+      this->com[j] = this->icom[j];
+      this->dip[j] = this->idip[j];
     }
-    this->atoms[i].x = this->atoms[i].pos[0];
-    this->atoms[i].y = this->atoms[i].pos[1];
-    this->atoms[i].z = this->atoms[i].pos[2];
   }
 }
 
 void Molecule::resetExcept(int keep) {
   for (int i=0; i<this->natoms; i++) {
     for (int j=0; j<3; j++) {
-      if (j != keep)
+      if (j != keep) {
         this->atoms[i].pos[j] = this->atoms[i].ipos[j];
+        this->com[j] = this->icom[j];
+        this->dip[j] = this->idip[j];
+      }
     }
   }
 }
 
 void Molecule::setPostoInit() {
   for (int i=0; i<this->natoms; i++) {
-    for (int j=0; j<3; j++)
+    for (int j=0; j<3; j++) {
       this->atoms[i].ipos[j] = this->atoms[i].pos[j];
+      this->icom[j] = this->com[j];
+      this->idip[j] = this->dip[j];
+    }
   }
 }
+
 /*******************************************
  * Operators
  * *****************************************/
@@ -197,8 +228,8 @@ void Molecule::setPostoInit() {
  */
 Molecule Molecule::operator=(const Molecule& other) {
   this->natoms = other.natoms;
-  this->  interaction = other.interaction;
-  this->  groundenergy = other.groundenergy;
+  this->interaction = other.interaction;
+  this->groundenergy = other.groundenergy;
   this->nstates = other.nstates;
   this->nao = other.nao;
   this->nroots = other.nroots;
@@ -210,6 +241,9 @@ Molecule Molecule::operator=(const Molecule& other) {
   this-> nlindep = other.nlindep;
   this->excMethod = other.excMethod;
   this->activeCharges = other.activeCharges;
+  this->dip = other.dip;
+  this->idip = other.idip;
+  this->dipmag = other.dipmag;
 
   //Copy Atoms
   this->atoms = other.atoms;
