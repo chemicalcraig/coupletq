@@ -569,6 +569,8 @@ Molecule *parseComfile(ifstream &comfile) {
   //Get number of molecules
   int nmol = atoi(temps.c_str());
   Molecule *mol = new Molecule[nmol];
+  for (int i=0; i<nmol; i++)
+    mol[i].nmol = nmol;
 
   //Get order of interaction
   //limited to {1,2}

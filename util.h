@@ -23,9 +23,11 @@ double computeCoupling(Molecule mold, Molecule mola,int dcharge, int acharge) {
   double interaction = 0.;
   for (int i=0; i<mold.natoms; i++) {
     for (int j=0; j<mola.natoms; j++) {
-      double rda2 = (mold.atoms[i].x - mola.atoms[j].x)*(mold.atoms[i].x - mola.atoms[j].x)
-                   + (mold.atoms[i].y - mola.atoms[j].y)*(mold.atoms[i].y - mola.atoms[j].y)
-                   + (mold.atoms[i].z - mola.atoms[j].z)*(mold.atoms[i].z - mola.atoms[j].z);
+      double rda2 = 0.;
+      for (int k=0; k<3; k++) {
+        rda2 += (mold.atoms[i].pos[k] - mola.atoms[j].pos[k])
+          *(mold.atoms[i].pos[k] - mola.atoms[j].pos[k]);
+      }
       double rda = sqrt(rda2);
       interaction = mold.atoms[i].charges[dcharge] * mola.atoms[j].charges[acharge] / rda;
       res += interaction;

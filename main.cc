@@ -25,63 +25,61 @@ int main(int argc, char **argv) {
 
   //perform either a FRET or 3-body calculation
   ofstream outfile2;
-  outfile2.open("fretcoupling.dat");
+  outfile2.open("fretcoupling.dat", std::ofstream::out | std::ofstream::app);
   outfile2.precision(16);
   
   /** Set up the grid data for translation/rotations
    * in the Etransfer calculation
    */
-  mol[0].grid.setParams(100,100,200,0.05,0.05,0.05,2*M_PI,100,mol[0].grid.thetamax/mol[0].grid.ntheta);
-  mol[0].grid.nx = 100;
-  mol[0].grid.ny = 100;
-  mol[0].grid.nz = 200;
-  mol[0].grid.dx = 0.05;
-  mol[0].grid.dz = 0.05;
-  mol[0].grid.dy = -0.05;
-  mol[0].grid.thetamax = 2*M_PI;
-  mol[0].grid.ntheta = 100;
-  mol[0].grid.dtheta = mol[0].grid.thetamax/mol[0].grid.ntheta;
+  mol[0].grid.setParams(100,100,200,
+    0.05,0.4,0.05,
+    2*M_PI,100,mol[0].grid.thetamax/mol[0].grid.ntheta);
 
+  //Rotate Molecules if necessary to align mainly in the XY plane
+  for (int i=0; i<mol[0].nmol; i++)
+    mol[i].rotateTheta(M_PI/2,1);
 
   //move the first molecule a bit along the z-axis
-  const double trans = 4.;
-  for (int i=0; i<mol[0].natoms; i++) {
-    mol[0].atoms[i].z += trans;
-    mol[0].atoms[i].pos[2] += trans;
-  } mol[0].com[2] += trans;
+  const double trans = 3.;
+  mol[0].translate(2,trans);
+  mol[0].com[2] += trans;
+  
+  //move molecule along y axis to slip
+  const double transy = -20;
+  mol[0].translate(1,transy);
+  mol[0].com[1] += transy;
+
+  //reset initial positions
+  for (int i=0; i<mol[0].nmol; i++)
+    mol[i].setPostoInit();
   
   /************************************
    * Do the appropriate calulation
    */
 
-  double slip = 0.;
   double angle = 0.;
+  double slip;
   ofstream outfile3;
   outfile3.open("lastcoord");
   switch (mol[0].interaction) {
     case 1:
       for (int zi=0; zi<mol[0].grid.nz; zi++) {
         //angle = 0.;
-        slip = 0.;
+        slip = transy;
         //for (int thetai=0; thetai<mol[0].grid.ntheta; thetai++) {
         for (int islip=0; islip<mol[0].grid.ny; islip++) {
           fretCalc(mol,coupling);
-          outfile2<<trans+zi*mol[0].grid.dz<<" "<<slip<<" "<<coupling<<endl;
+          print.appendData3d(outfile2,trans+zi*mol[0].grid.dz,slip,coupling);
           //outfile2<<trans+zi*mol[0].grid.dz<<" "<<angle<<" "<<coupling<<endl;
           //mol[0].rotateCom(mol[0].grid.dtheta,mol[1].com);
           mol[0].translate(1,mol[0].grid.dy);
           slip += mol[0].grid.dy;
           //angle += mol[0].grid.dtheta;
         }
-          for (int i=0; i<mol[0].natoms; i++) {
-          outfile3<<i<<" "<<mol[0].atoms[i].pos[0]<<" "
-          <<mol[0].atoms[i].pos[1]<<" "
-          <<mol[0].atoms[i].pos[2]<<endl;
-        }
 
         //reset x and y coordinates, keep z coordinate
         //mol[0].resetall();
-        mol[0].reset(2);
+        mol[0].resetExcept(2);
 
         //translate vertically
         //mol[0].translate(2,trans+zi*mol[0].grid.dz);
