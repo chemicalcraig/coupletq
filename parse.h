@@ -647,6 +647,14 @@ Molecule *parseComfile(ifstream &comfile) {
     mol[i].transmoment[0+3*2]<<" z) "<<endl;
     cout<<"The ground state energy of molecule "<<i+1<<" is "<<mol[i].groundenergy<<" a.u."<<endl;
   }
+
+  //get output file name to which coupling will be written
+  comfile.getline(tempc,1000);
+  temps = strtok(tempc,":");
+  temps = strtok(NULL,": ");
+  mol[0].outputfilename = temps;
+  cout<<"Couplings are written to : "<<mol[0].outputfilename<<endl;
+
   return mol;
 }
 

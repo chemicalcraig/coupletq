@@ -56,6 +56,7 @@ class Molecule {
   void setnatoms(int n) {natoms = n;};
   void setxyz(int x, int y, int z) {nx=x;ny=y;nz=z;};
   void setcom();
+  string outputfilename;
   
   /* Grid data for translation/rotation **/
   Grid grid;

@@ -43,7 +43,7 @@ void Molecule::allocateMemTddft() {
   //  this->ci[i] = 0.;
 }
 
-//subroutines to rotate molecule
+//subroutines to rotate molecule, theta in radians
 void Molecule::rotateTheta(double theta, int axis) {
   double sum = 0.;
   double pos[3];
@@ -90,8 +90,6 @@ void Molecule::rotateTheta(double theta, int axis) {
 
 //rotate about vector connecting centers of mass
 void Molecule::rotateCom(double theta, double *cm) {
-  ofstream rotout;
-  rotout.open("rotcoords");
 
   //Get unit vector connecting the com's
   double diff[3];
@@ -128,7 +126,6 @@ void Molecule::rotateCom(double theta, double *cm) {
     for (int i=0; i<3; i++) {
       double sum = 0.;
       for (int j=0; j<3; j++) {
-        //cout<<i<<" "<<j<<" "<<this->rotmatcom[i+j*3]<<endl;
         sum += this->rotmatcom[i + 3*j] * pos[j];
       }
       pos2[i] = sum;

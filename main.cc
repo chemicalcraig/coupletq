@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
 
   //perform either a FRET or 3-body calculation
   ofstream outfile2;
-  outfile2.open("fretcoupling.dat", std::ofstream::out | std::ofstream::app);
+  outfile2.open(mol[0].outputfilename.c_str(), std::ofstream::out | std::ofstream::app);
   outfile2.precision(16);
   
   /** Set up the grid data for translation/rotations
@@ -40,9 +40,9 @@ int main(int argc, char **argv) {
     mol[i].rotateTheta(M_PI/2,1);
 
   //move the first molecule a bit along the z-axis
-  const double trans = 3.;
-  mol[0].translate(2,trans);
-  mol[0].com[2] += trans;
+  const double transz = 3.;
+  mol[0].translate(2,transz);
+  mol[0].com[2] += transz;
   
   //move molecule along y axis to slip
   const double transy = -20;
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
         //for (int thetai=0; thetai<mol[0].grid.ntheta; thetai++) {
         for (int islip=0; islip<mol[0].grid.ny; islip++) {
           fretCalc(mol,coupling);
-          print.appendData3d(outfile2,trans+zi*mol[0].grid.dz,slip,coupling);
+          print.appendData3d(outfile2,transz+zi*mol[0].grid.dz,slip,coupling);
           //outfile2<<trans+zi*mol[0].grid.dz<<" "<<angle<<" "<<coupling<<endl;
           //mol[0].rotateCom(mol[0].grid.dtheta,mol[1].com);
           mol[0].translate(1,mol[0].grid.dy);
