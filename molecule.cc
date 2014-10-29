@@ -45,6 +45,21 @@ void Molecule::allocateMemTddft() {
   //  this->ci[i] = 0.;
 }
 
+/** Set atomic properties **/
+
+void Molecule::setAtomicMasses(string t, string m) {
+  for (int i=0; i<this->natoms; i++) {
+    if (this->atoms[i].type == t) {
+      this->atoms[i].setMass(m);
+      continue;
+    }
+  }
+}
+
+/*
+ * Subroutines to move and rotate the molecule 
+ */
+
 //subroutines to rotate molecule, theta in radians
 void Molecule::rotateTheta(double theta, int axis) {
   
@@ -79,25 +94,22 @@ void Molecule::rotateTheta(double theta, int axis) {
       this->rot[1+3*1] = cos(theta);
       break;
   }
+
+  cblas_dgemv(CblasColMajor,CblasNoTrans,
+              3,3,1,this->rot,3,this->com,1,0,pos2,1);
+  cblas_dgemv(CblasColMajor,CblasNoTrans,
+              3,3,1,this->rot,3,this->dip,1,0,pos3,1);
   for (int i=0; i<this->natoms; i++) {
-    for (int j=0; j<3; j++) {
-      sum = 0.;
-      double sum2 = 0.;
-      double sum3 = 0.;
-      for (int k=0; k<3; k++) {
-        sum += rot[j+k*3] * this->atoms[i].pos[k];
-        sum2 += rot[j+k*3] * this->com[k];
-        sum3 += rot[j+k*3] * this->dip[k];
-      }
-      pos2[j] = sum2;
-      pos[j] = sum;
-      pos3[j] = sum3;
-    }
+    cblas_dgemv(CblasColMajor,CblasNoTrans,
+              3,3,1,this->rot,3,this->atoms[i].pos,1,0,pos,1);
     for (int j=0; j<3; j++) {
       this->atoms[i].pos[j] = pos[j];
-      this->com[j] = pos2[j];
-      this->dip[j] = pos3[j];
     }
+  }
+
+  for (int j=0; j<3; j++) {
+    this->com[j] = pos2[j];
+    this->dip[j] = pos3[j];
   }
 }
 
@@ -155,8 +167,21 @@ void Molecule::rotateCom(double theta, double *cm) {
   }
 }
 
-void Molecule::setcom() {
-  for (int i=0; i<this->natoms; i++) {
+/** Set molecule's mass **/
+void Molecule::setMass(double m) {
+  this->mass = m;
+}
+
+/** Set center of mass **/
+void Molecule::setCom() {
+  double sum[3];
+  for (int i=0; i<3; i++) {
+    sum[i] = 0.;
+    for (int j=0; j<this->natoms; j++) {
+      sum[i] += this->atoms[j].pos[i] * this->atoms[j].mass;
+    }
+    sum[i] /= this->mass;
+    this->com[i] = sum[i];
   }
 }
 
@@ -168,24 +193,25 @@ void Molecule::translate(const int which, double howmuch) {
       for (int i=0; i<this->natoms; i++) {
           this->atoms[i].pos[0] += howmuch;
         }
-        this->com[0] += howmuch;
-        this->dip[0] += howmuch;
+        //this->com[0] += howmuch;
+        //this->dip[0] += howmuch;
       break;
     case 1: //y-axis
       for (int i=0; i<this->natoms; i++) {
           this->atoms[i].pos[1] += howmuch;
         }
-        this->com[1] += howmuch;
-        this->dip[1] += howmuch;
+        //this->com[1] += howmuch;
+        //this->dip[1] += howmuch;
       break;
     case 2: //z-axis
       for (int i=0; i<this->natoms; i++) {
         this->atoms[i].pos[2] += howmuch;
       }
-      this->com[2] += howmuch;
-      this->dip[2] += howmuch;
+      //this->com[2] += howmuch;
+      //this->dip[2] += howmuch;
       break;
   }
+  this->setCom();
 }
 
 void Molecule::resetall() {
@@ -203,11 +229,12 @@ void Molecule::resetExcept(int keep) {
     for (int j=0; j<3; j++) {
       if (j != keep) {
         this->atoms[i].pos[j] = this->atoms[i].ipos[j];
-        this->com[j] = this->icom[j];
+        //this->com[j] = this->icom[j];
         this->dip[j] = this->idip[j];
       }
     }
   }
+  this->setCom();
 }
 
 void Molecule::setPostoInit() {

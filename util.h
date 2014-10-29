@@ -42,18 +42,18 @@ double orient(Molecule mold, Molecule mola,double *r12) {
   
   /** get unit vector in direction of each transition dipole vector **/
   double dipunit1[3],dipunit2[3],temp[3];
+  
   for (int i=0; i<3; i++) {
-    temp[i] = mold.dip[i];// - mold.com[i];
+    temp[i] = mold.idip[i] + mold.com[i];
   }
-  mold.dipmag = cblas_ddot(3,temp,1,temp,1);
-  mola.dipmag = cblas_ddot(3,mola.dip,1,mola.dip,1);
+
   for (int i=0; i<3; i++) {
-    dipunit1[i] = temp[i] / sqrt(mold.dipmag);
+    dipunit1[i] = mold.dip[i] / sqrt(mold.dipmag);
     dipunit2[i] = mola.dip[i] / sqrt(mola.dipmag);
   }
 
-  double res = cblas_ddot(3,dipunit1,1,dipunit2,1) -3* (3,dipunit1,1,r12,1)*(3,dipunit2,1,r12,1);
- 
+  double res = cblas_ddot(3,dipunit1,1,dipunit2,1) 
+              -3* cblas_ddot(3,dipunit1,1,r12,1)*cblas_ddot(3,dipunit2,1,r12,1);
   return res;
 }
 
@@ -70,25 +70,17 @@ double pdaCalc(Molecule *mol, double &res) {
     diff[i] = mol[0].com[i] - mol[1].com[i];
     sum += diff[i]*diff[i];
   }
-  
+
   //normalize it
   for (int i=0; i<3; i++) {
     diff[i] /= sqrt(sum);
   }
 
   /** Calculate orientation factor **/
-  double kappa = -1*orient(mol[0],mol[1],diff);
+  double kappa = orient(mol[0],mol[1],diff);
 
-  /** get unit vector in direction of each transition dipole vector **/
-  double dipunit1[3],dipunit2[3],temp[3];
-  for (int i=0; i<3; i++) {
-    temp[i] = mol[0].dip[i];// - mol[0].com[i];
-  }
-  mol[0].dipmag = cblas_ddot(3,temp,1,temp,1);
-  mol[1].dipmag = cblas_ddot(3,mol[1].dip,1,mol[1].dip,1);
-
-  res = kappa * mol[1].dipmag*mol[1].dipmag / (sum*sqrt(sum));
-  
+  res = kappa * mol[1].dipmag*mol[1].dipmag / (sqrt(sum)*sum);
+  //cout<<kappa<<" "<<mol[1].dipmag<<" "<<sqrt(sum)<<endl;
 }
 
 /**** Skip several lines in input file ****/
@@ -119,7 +111,7 @@ bool calcdip(Molecule &mol) {
   mol.dip[0] = dx;
   mol.dip[1] = dy;
   mol.dip[2] = dz;
-  mol.dipmag = sqrt(dx*dx+dy*dy+dz*dz);
+  mol.dipmag = sqrt(dx*dx+dy*dy+dz*dz)/0.39345;
   
   cout<<"Transition dipole moment: "<<dx<<" x, "<<dy<<" y, "<<dz<<" z"<<endl;
   cout<<"Magnitude = "<<sqrt(dx*dx+dy*dy+dz*dz)<<endl;
@@ -223,7 +215,9 @@ void getCharges(string filename, int nmol, Molecule *mol, int icharge, int nstat
   for (int j=0; j<mol->natoms; j++) {
     infile.getline(tempc,1000);
     temps = strtok(tempc," ");
-    for (int i=0; i<2; i++) temps = strtok(NULL," ");
+    temps = strtok(NULL," ");
+    mol->atoms[j].type = temps;
+    temps = strtok(NULL," ");
     mol->atoms[j].x = atof(temps.c_str());
     mol->atoms[j].pos[0] = atof(temps.c_str());
     mol->atoms[j].ipos[0] = atof(temps.c_str());

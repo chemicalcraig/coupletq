@@ -28,7 +28,7 @@ string mo_analysis_str="                       DFT Final Molecular Orbital Analy
 string lindep_str = " !! The overlap matrix has";
 string aobas_str = "          AO basis - number of functions:";
 string com_str = " center of mass";
-
+string mass_str = "      Atomic Mass";
 /* Number of columns for printing of matrices */
 int ncol = 6;
 
@@ -121,7 +121,7 @@ bool parseLog(string str, Molecule *mol) {
 
           //Get atom type
           mol->atoms[i].type = temps;
-
+          
           //Get atom charge
           temps = strtok(NULL," ");
           mol->atoms[i].charge = atof(temps.c_str());
@@ -143,6 +143,7 @@ bool parseLog(string str, Molecule *mol) {
           temps = strtok(tempc," ");
           i++;
         }
+        cout<<"Temps "<<temps<<endl;
       } //end geometry
 
 /** Number of AO basis functions **/
@@ -438,6 +439,22 @@ bool getTDDFT(string str, Molecule *mol) {
         mol->com[2] = atof(temps.c_str());
         mol->icom[2] = mol->com[2];
       }
+
+      //Get atomic masses while we're here
+      if (temps.compare(0,17,mass_str,0,17) == 0) {
+        
+        infile>>ws;
+        getnlines(infile,tempc,3,1000);
+
+        while(temps.compare(0,10,"Effective nuclear",0,10) != 0) {
+          string temps2 = strtok(tempc," ");
+          temps = strtok(NULL," ");
+          mol->setAtomicMasses(temps2,temps);
+          infile>>ws;
+          infile.getline(tempc,1000);
+          temps = tempc;
+        }
+      }
       
       //Get TDDFT information
       if (temps.compare(0,10,tddft_str,0,10) == 0) {
@@ -658,6 +675,14 @@ Molecule *parseComfile(ifstream &comfile) {
   mol[0].outputfilename = temps;
   cout<<"Couplings are written to : "<<mol[0].outputfilename<<endl;
 
+  /** Set Molecular Mass **/
+  for (int i=0; i<nmol; i++) {
+    double mass = 0.;
+    for (int j=0; j<mol[i].natoms; j++) {
+      mass += mol[i].atoms[j].mass;
+    }
+    mol[i].setMass(mass);
+  }
   return mol;
 }
 

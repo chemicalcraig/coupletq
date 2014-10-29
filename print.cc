@@ -18,7 +18,11 @@ void Print::positions(string filename,const int which) {
 }
 
 void Print::appendData3d(ofstream &outfile, double x, double y, double z) {
-
-
   outfile<<x<<" "<<y<<" "<<z<<endl;
 }
+
+void Print::appendData2d(ofstream &outfile, double x, double y) {
+  outfile<<x<<" "<<y<<endl;
+}
+
+

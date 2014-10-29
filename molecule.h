@@ -3,6 +3,7 @@
 
 #include "atom.h"
 #include "grid.h"
+#include "gsl/gsl_blas.h"
 #include <iostream>
 #include <cstdio>
 #include <math.h>
@@ -14,6 +15,7 @@ class Molecule {
   public:
   int interaction; //type of interaction (Forster/3-body)
   double groundenergy; //ground state energy in a.u.
+  double mass; //molecular mass
   int nstates; //number of excited states to consider
   int nao,nbasis; //number of AO's and eigenvectors
   int nmo; //Number of orthonormal MO's
@@ -55,12 +57,13 @@ class Molecule {
 
   void setnatoms(int n) {natoms = n;};
   void setxyz(int x, int y, int z) {nx=x;ny=y;nz=z;};
-  void setcom();
+  void setCom();
   string outputfilename;
   
   /* Grid data for translation/rotation **/
   Grid grid;
 
+  /** Constructor and Destructor **/
   Molecule();
   ~Molecule() {};
 
@@ -70,6 +73,10 @@ class Molecule {
   void allocateMemAtoms(const int na);
   void allocateMemTddft();
   void setnroots(const int n) {this->nroots=n;};
+
+  /** Set masses **/
+  void setAtomicMasses(string t, string m);
+  void setMass(double m);
 
   /*********************************************
    * Operators
