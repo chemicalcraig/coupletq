@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
   
   //move molecule along y axis to slip
   const double transy = -20;
-  mol[0].translate(1,transy);
+//  mol[0].translate(1,transy);
 //  mol[0].com[1] += transy;
 
   //reset initial positions
@@ -86,22 +86,22 @@ int main(int argc, char **argv) {
         //angle = 0.;
         slip = transy;
         //for (int thetai=0; thetai<mol[0].grid.ntheta; thetai++) {
-        for (int islip=0; islip<mol[0].grid.ny; islip++) {
+        //for (int islip=0; islip<mol[0].grid.ny; islip++) {
           fretCalc(mol,coupling);          
-          //print.appendData2d(outfile2,transz+zi*mol[0].grid.dz,coupling);
-          print.appendData3d(outfile2,transz+zi*mol[0].grid.dz,slip,coupling);
+          print.appendData2d(outfile2,transz+zi*mol[0].grid.dz,coupling);
+          //print.appendData3d(outfile2,transz+zi*mol[0].grid.dz,slip,coupling);
 
           pdaCalc(mol,coupling2);
-          print.appendData3d(pdafile,transz+zi*mol[0].grid.dz,slip,coupling2);
-          //print.appendData2d(pdafile,transz+zi*mol[0].grid.dz,coupling2);
+          //print.appendData3d(pdafile,transz+zi*mol[0].grid.dz,slip,coupling2);
+          print.appendData2d(pdafile,transz+zi*mol[0].grid.dz,coupling2);
           
           //outfile2<<trans+zi*mol[0].grid.dz<<" "<<angle<<" "<<coupling<<endl;
           //mol[0].rotateCom(mol[0].grid.dtheta,mol[1].com);
-          mol[0].translate(1,mol[0].grid.dy);
+          //mol[0].translate(1,mol[0].grid.dy);
           slip += mol[0].grid.dy;
          // mol[0].setCom();
           //angle += mol[0].grid.dtheta;
-        } //end slip
+        //} //end slip
 
         //reset x and y coordinates, keep z coordinate
         //mol[0].resetall();
