@@ -1,14 +1,26 @@
 #include "grid.h"
-  
-void Grid::setParams(int nx,int ny,int nz,double dx,double dy,double dz,double tmax,int ntheta,double dtheta) {
+ 
+Grid::Grid() {
+  this->min = 0.;
+  this->max = 0.;
+  this->dgrid = 0.;
+  this->ngrid = 0;
+}
 
-  this->nx = nx;
-  this->ny = ny;
-  this->nz = nz;
-  this->dx = dx;
-  this->dy = dy;
-  this->dz = dz;
-  this->thetamax = tmax;
-  this->ntheta = ntheta;
-  this->dtheta = dtheta;
+void Grid::setParams(double min, double max, double dgrid) {
+
+  this->min = min;
+  this->max = max;
+  this->dgrid = dgrid;
+
+  ngrid = (this->max - this->min)/this->dgrid;
+}
+
+void Grid::setParams(double min, double max, int ngrid) {
+  
+  this->min = min;
+  this->max = max;
+  this->ngrid = ngrid;
+
+  dgrid = (this->max - this->min)/this->ngrid;
 }

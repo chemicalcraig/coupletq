@@ -22,8 +22,9 @@ int main(int argc, char **argv) {
    * this sets up the main Molecule object
    */
   mol = parseComfile(comfile);
-  mol[0].setCom();
-  mol[1].setCom();
+  for (int i=0; i<mol[0].nmol; i++) {
+    mol[i].setCom();
+  }
   
   /** set up printer and output files **/
   Print print(mol);
@@ -35,11 +36,18 @@ int main(int argc, char **argv) {
   outfile2.precision(16);
   pdafile.precision(16);
 
-  /** Set up the grid data for translation/rotations
-   * in the Etransfer calculation **/
-  mol[0].grid.setParams(100,100,200,
-    0.05,0.4,0.05,
-    2*M_PI,100,mol[0].grid.thetamax/mol[0].grid.ntheta);
+  /** Set up the grid data **/
+  int griddim = 3;
+  for (int i=0; i<mol[0].nmol; i++) {
+    mol[i].grid = new Grid[griddim];
+    for (int j=0; j<griddim; j++) {
+      mol[i].grid[j].size = griddim;
+    }
+  }
+
+  /** min, max, nsteps **/
+  mol[0].grid[1].setParams(-20., 20., 100);
+  mol[0].grid[2].setParams(4., 12., 200);
 
 /*****************  Setting up Molecular distribution ******************/
   /** Calculate transition dipole from charges **/
@@ -50,20 +58,11 @@ int main(int argc, char **argv) {
   }
 
   //Rotate Molecules if necessary to align mainly in the XY plane
-  for (int i=0; i<mol[0].nmol; i++)
-    mol[i].rotateTheta(M_PI/2,1);
-
-  //move the first molecule a bit along the z-axis
-  const double transz = 3.;
-  mol[0].translate(2,transz);
-//  mol[0].com[2] += transz;
-  
-  //move molecule along y axis to slip
-  const double transy = -20;
-//  mol[0].translate(1,transy);
-//  mol[0].com[1] += transy;
+//  for (int i=0; i<mol[0].nmol; i++)
+//    mol[i].rotateTheta(M_PI/2,1);
 
   //reset initial positions
+  arrangeMol(mol);
   for (int i=0; i<mol[0].nmol; i++) {
     mol[i].setCom();
     mol[i].setPostoInit();
@@ -82,33 +81,37 @@ int main(int argc, char **argv) {
   outfile3.open("lastcoord");
   switch (mol[0].interaction) {
     case 1:
-      for (int zi=0; zi<mol[0].grid.nz; zi++) {
+      for (int i=0; i<mol[0].ngriddim; i++) {
+        fretCalc(mol,coupling);
+        for (int j=0; j<mol[0].grid[
+
+      }
+
+      for (int zi=0; zi<mol[0].grid[2].ngrid; zi++) {
         //angle = 0.;
-        slip = transy;
+        slip = mol[0].grid[1].min;
         //for (int thetai=0; thetai<mol[0].grid.ntheta; thetai++) {
-        //for (int islip=0; islip<mol[0].grid.ny; islip++) {
+        for (int islip=0; islip<mol[0].grid[2].ngrid; islip++) {
           fretCalc(mol,coupling);          
-          print.appendData2d(outfile2,transz+zi*mol[0].grid.dz,coupling);
-          //print.appendData3d(outfile2,transz+zi*mol[0].grid.dz,slip,coupling);
+          //print.appendData2d(outfile2,transz+zi*mol[0].grid.dz,coupling);
+          print.appendData3d(outfile2,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling);
 
           pdaCalc(mol,coupling2);
-          //print.appendData3d(pdafile,transz+zi*mol[0].grid.dz,slip,coupling2);
-          print.appendData2d(pdafile,transz+zi*mol[0].grid.dz,coupling2);
+          print.appendData3d(pdafile,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling2);
+          //print.appendData2d(pdafile,transz+zi*mol[0].grid.dz,coupling2);
           
           //outfile2<<trans+zi*mol[0].grid.dz<<" "<<angle<<" "<<coupling<<endl;
           //mol[0].rotateCom(mol[0].grid.dtheta,mol[1].com);
-          //mol[0].translate(1,mol[0].grid.dy);
-          slip += mol[0].grid.dy;
-         // mol[0].setCom();
-          //angle += mol[0].grid.dtheta;
-        //} //end slip
+          mol[0].translate(1,mol[0].grid[1].dgrid);
+          slip += mol[0].grid[1].dgrid;
+        } //end slip
 
         //reset x and y coordinates, keep z coordinate
         //mol[0].resetall();
         mol[0].resetExcept(2);
 
         //translate vertically
-        mol[0].translate(2,mol[0].grid.dz);
+        mol[0].translate(2,mol[0].grid[2].dgrid);
         //mol[0].setCom();
       }
       break;

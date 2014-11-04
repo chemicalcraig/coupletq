@@ -60,6 +60,13 @@ void Molecule::setAtomicMasses(string t, string m) {
  * Subroutines to move and rotate the molecule 
  */
 
+void Molecule::arrangeMol() {
+  for (int i=0; i<this->griddim; i++) {
+    this->translate(i,this->grid[i].min);
+  }
+}
+
+
 //subroutines to rotate molecule, theta in radians
 void Molecule::rotateTheta(double theta, int axis) {
   

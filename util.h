@@ -17,6 +17,13 @@ using namespace std;
  * Functions
  * *******************************************************/
 
+/** Arrange molecules to desired configuration **/
+void arrangeMol(Molecule *mol) {
+  for (int i=0; i<mol[0].nmol; i++) {
+    mol[i].arrangeMol();
+  }
+}
+
 /** Compute the coupling between two distributions of transition charges **/
 /** dcharge and acharge specify which transition to use **/
 double computeCoupling(Molecule mold, Molecule mola,int dcharge, int acharge) {

@@ -32,6 +32,8 @@ class Molecule {
   void resetExcept(int keep);
   void setPostoInit();
   void resetall();
+  void arrangeMol();
+  int griddim; 
 
   double *ci; //ci coefficients
   int* nbasisatom; //number of basis functions on an atom
@@ -61,7 +63,7 @@ class Molecule {
   string outputfilename;
   
   /* Grid data for translation/rotation **/
-  Grid grid;
+  Grid *grid;
 
   /** Constructor and Destructor **/
   Molecule();
