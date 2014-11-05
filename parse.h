@@ -320,7 +320,7 @@ bool parseLog(string str, Molecule *mol) {
         infile.getline(tempc,1000);
         temps = strtok(tempc," ");
         for (int i=0; i<4; i++) temps = strtok(NULL," ");
-        mol->excenergy[root] = atof(temps.c_str());
+        mol->excenergy[root+1] = atof(temps.c_str());
 
         getnlines(infile,tempc,2,1000);
       
@@ -474,7 +474,7 @@ bool getTDDFT(string str, Molecule *mol) {
           for (int i=0; i<4; i++) temps = strtok(NULL," ");
         
           //get energy of root
-          mol->excenergy[root] = atof(temps.c_str());
+          mol->excenergy[root+1] = atof(temps.c_str());
 
           getnlines(infile,tempc,2,1000);
       
@@ -609,7 +609,7 @@ Molecule *parseComfile(ifstream &comfile) {
     temps = strtok(tempc,":");
     temps = strtok(NULL,": ");
     mol[i].nstates = atoi(temps.c_str());
-    cout<<"There are "<<mol[i].nstates<<" states for molecule "<<i+1<<endl;
+    cout<<"There are "<<mol[i].nstates<<" excited states for molecule "<<i+1<<endl;
     
     //get natoms and charge densities of each molecule, 
     //  each one requires a separate file generated
@@ -631,7 +631,7 @@ Molecule *parseComfile(ifstream &comfile) {
         for (int j=0; j<mol[i].natoms; j++) {
           //this should change if inter-excited transitions are to 
           //be included
-          mol[i].atoms[j].allocateCharges(2*mol[i].nstates-1);// = new double[2*mol[i].nstates-1];
+          mol[i].atoms[j].allocateCharges(2*(mol[i].nstates+1)-1);// = new double[2*mol[i].nstates-1];
         }
       }
       

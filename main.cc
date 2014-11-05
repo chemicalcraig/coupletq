@@ -40,14 +40,16 @@ int main(int argc, char **argv) {
   int griddim = 3;
   for (int i=0; i<mol[0].nmol; i++) {
     mol[i].grid = new Grid[griddim];
+    mol[i].griddim = griddim;
     for (int j=0; j<griddim; j++) {
       mol[i].grid[j].size = griddim;
     }
   }
 
   /** min, max, nsteps **/
-  mol[0].grid[1].setParams(-20., 20., 100);
-  mol[0].grid[2].setParams(4., 12., 200);
+  mol[1].grid[1].setParams(4., 20., 100);
+  //mol[0].grid[2].setParams(10., 12., 200);
+  mol[2].grid[1].setParams(-1000., -12., 200);
 
 /*****************  Setting up Molecular distribution ******************/
   /** Calculate transition dipole from charges **/
@@ -81,12 +83,14 @@ int main(int argc, char **argv) {
   outfile3.open("lastcoord");
   switch (mol[0].interaction) {
     case 1:
-      for (int i=0; i<mol[0].ngriddim; i++) {
+/*      for (int i=0; i<mol[0].ngriddim; i++) { //x,y,z,...
         fretCalc(mol,coupling);
-        for (int j=0; j<mol[0].grid[
+        for (int j=0; j<mol[0].grid[i].ngrid; j++) { //ngrid steps
+          
+        }
 
       }
-
+*/
       for (int zi=0; zi<mol[0].grid[2].ngrid; zi++) {
         //angle = 0.;
         slip = mol[0].grid[1].min;

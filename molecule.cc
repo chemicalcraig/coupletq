@@ -35,7 +35,7 @@ void Molecule::allocateMemAtoms(const int na) {
 void Molecule::allocateMemTddft() {
   int ntrans = 9*this->nroots;
 
-  this->excenergy = new double[this->nroots];
+  this->excenergy = new double[this->nroots+1];
   this->transmoment = new double[ntrans];
   this->oscstrength = new double[this->nroots];
   //skipping CI vectors for now since we'll be

@@ -17,7 +17,7 @@ CPPFLAGS = -I/usr/include -O3 -Wno-unused-variable -Wno-deprecated -fpermissive
 
 SHELL = /bin/sh
 
-HEADERS1 = main.h atom.h molecule.h util.h parse.h fret.h grid.h print.h
+HEADERS1 = main.h atom.h molecule.h util.h parse.h fret.h grid.h print.h pert.h
 HEADERS  = $(HEADERS1)
 
 OBJS = main.o atom.o molecule.o print.o grid.o
