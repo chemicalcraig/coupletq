@@ -37,6 +37,8 @@ double computeCoupling(Molecule mold, Molecule mola,int dcharge, int acharge) {
           *(mold.atoms[i].pos[k] - mola.atoms[j].pos[k]);
       }
       double rda = sqrt(rda2);
+      cout<<i<<" "<<j<<" "<<rda<<" r12 "<<endl;
+      cout<<"charges "<<mold.atoms[i].charges[dcharge]<<" "<<mola.atoms[j].charges[acharge]<<endl;
       interaction = mold.atoms[i].charges[dcharge] * mola.atoms[j].charges[acharge] / rda;
       res += interaction;
     }

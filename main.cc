@@ -31,8 +31,8 @@ int main(int argc, char **argv) {
   ofstream outfile2,pdafile;
   remove(mol[0].outputfilename.c_str());
   outfile2.open(mol[0].outputfilename.c_str(), std::ofstream::out | std::ofstream::app);
-  remove("pda.dat");
-  pdafile.open("pda.dat", std::ofstream::out | std::ofstream::app);
+  //remove("pda.dat");
+  //pdafile.open("pda.dat", std::ofstream::out | std::ofstream::app);
   outfile2.precision(16);
   pdafile.precision(16);
 
@@ -47,7 +47,7 @@ int main(int argc, char **argv) {
   }
 
   /** min, max, nsteps **/
-  mol[1].grid[1].setParams(4., 20., 100);
+  mol[0].grid[2].setParams(4., 4., 1);
   //mol[0].grid[2].setParams(10., 12., 200);
   mol[2].grid[1].setParams(-1000., -12., 200);
 
@@ -78,9 +78,8 @@ int main(int argc, char **argv) {
 
   double angle = 0.;
   double slip;
-  ofstream outfile3;
   double coupling2;
-  outfile3.open("lastcoord");
+
   switch (mol[0].interaction) {
     case 1:
 /*      for (int i=0; i<mol[0].ngriddim; i++) { //x,y,z,...
@@ -95,20 +94,19 @@ int main(int argc, char **argv) {
         //angle = 0.;
         slip = mol[0].grid[1].min;
         //for (int thetai=0; thetai<mol[0].grid.ntheta; thetai++) {
-        for (int islip=0; islip<mol[0].grid[2].ngrid; islip++) {
+        //for (int islip=0; islip<mol[0].grid[2].ngrid; islip++) {
           fretCalc(mol,coupling);          
-          //print.appendData2d(outfile2,transz+zi*mol[0].grid.dz,coupling);
-          print.appendData3d(outfile2,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling);
+          print.appendData2d(outfile2,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,coupling);
+          //print.appendData3d(outfile2,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling);
 
-          pdaCalc(mol,coupling2);
-          print.appendData3d(pdafile,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling2);
-          //print.appendData2d(pdafile,transz+zi*mol[0].grid.dz,coupling2);
+          //pdaCalc(mol,coupling2);
+          //print.appendData3d(pdafile,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling2);
+          print.appendData2d(pdafile,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,coupling2);
           
-          //outfile2<<trans+zi*mol[0].grid.dz<<" "<<angle<<" "<<coupling<<endl;
           //mol[0].rotateCom(mol[0].grid.dtheta,mol[1].com);
-          mol[0].translate(1,mol[0].grid[1].dgrid);
-          slip += mol[0].grid[1].dgrid;
-        } //end slip
+          //mol[0].translate(1,mol[0].grid[1].dgrid);
+          //slip += mol[0].grid[1].dgrid;
+        //} //end slip
 
         //reset x and y coordinates, keep z coordinate
         //mol[0].resetall();

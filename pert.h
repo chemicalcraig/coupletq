@@ -24,8 +24,8 @@ void pertCalc(Molecule *mol) {
     for (int j=0; j<2; j++) 
       for (int k=0; k<2; k++) {
         energies[i][j][k] = (mol[0].excenergy[i] )//- mol[0].groundenergy)
-                            + (mol[1].excenergy[j]*1.1)// - mol[1].groundenergy)
-                            + (mol[2].excenergy[k]*.9);// - mol[2].groundenergy);
+                            + (mol[1].excenergy[j]*.5)// - mol[1].groundenergy)
+                            + (mol[2].excenergy[k]*.5);// - mol[2].groundenergy);
       }
 
   double inv, temp,temp2,r12,r13,r23,sum,pos[3];
@@ -46,6 +46,9 @@ void pertCalc(Molecule *mol) {
         r12 = cblas_ddot(3,pos,1,pos,1);
         r12 = sqrt(r12);
 
+//CTC test start
+//        temp += 10*mol[0].atoms[i].charges[2] * mol[1].atoms[j].charges[2] / r12;
+
         for (int k=0; k<mol[0].natoms; k++) {
           for (int l=0; l<mol[2].natoms; l++) {
             //get r13
@@ -62,9 +65,12 @@ void pertCalc(Molecule *mol) {
         } //end D' atoms
       } //end A1 atoms
     } //end D atoms
+//    cout<<temp<<endl;
+//    exit(0);
+//CTC test end
     temp *= inv;
 
-//CTC test end
+
 
     inv = 1./(energies[1][0][0] - energies[I][0][1]);
     //cout<<I<<" "<<temp<<" "<<r12*r13<<" "<<inv<<endl;
