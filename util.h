@@ -17,6 +17,44 @@ using namespace std;
  * Functions
  * *******************************************************/
 
+/** Create Coulomb Matrix **/
+void createCoulomb(Molecule *mol, int I, int K, int J, int i, int, j, int k, int l, int m, int n) {
+  double sum;
+  for (int ii=0; ii<mol[0].nmol; ii++) {
+    for (int jj=0; jj<mol[0].nmol; jj++) {
+      for (int kk=0; kk<mol[0].nmol; kk++) {
+      for (int i=0; i<mol[ii].nstates; i++) {
+        for (int j=0; j<mol[jj].nstates; j++) {
+          for (int k=0; k<mol[kk].nstates; k++) {
+          }          
+          }
+        }
+      }
+    }
+  }
+}
+
+/** Calculate Coulomb coupling between chromophores I and J
+ * undergoing transisions between i and j, and k and l, respectively **/
+double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
+  double res, sum, temp, pos[3];
+  for (int i=0; i<mol[I].natoms; i++) {
+    for (int j=0; j<mol[J].natoms; j++) {
+      double r12 = 0.;
+      for (int k=0; k<3; k++) {
+        pos[k] = mol[I].atoms[i].pos[k] - mol[J].atoms[j].pos[k];
+      }
+      r12 = cblas_ddot(3,pos,1,pos,1);
+      r12 = sqrt(r12);
+
+      temp += mol[I].atoms[i].charges[i+j*mol[I].nstates] * mol[J].atoms[j].charges[k+l*mol[J].nstates];
+    }
+  }
+
+  return res;
+}
+
+
 /** Arrange molecules to desired configuration **/
 void arrangeMol(Molecule *mol) {
   for (int i=0; i<mol[0].nmol; i++) {
