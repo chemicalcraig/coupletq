@@ -13,45 +13,65 @@
 #include "gsl/gsl_blas.h"
 using namespace std;
 
+/** Kronecker Delta **/
+#define Kronecker(a,b) ((a == b ? 1 : 0))
+
 /********************************************************
  * Functions
  * *******************************************************/
-
-/** Create Coulomb Matrix **/
-void createCoulomb(Molecule *mol, int I, int K, int J, int i, int, j, int k, int l, int m, int n) {
-  double sum;
-  for (int ii=0; ii<mol[0].nmol; ii++) {
-    for (int jj=0; jj<mol[0].nmol; jj++) {
-      for (int kk=0; kk<mol[0].nmol; kk++) {
-      for (int i=0; i<mol[ii].nstates; i++) {
-        for (int j=0; j<mol[jj].nstates; j++) {
-          for (int k=0; k<mol[kk].nstates; k++) {
-          }          
-          }
-        }
-      }
-    }
-  }
-}
+/** Wrap DGEMM **/
+void multmm(double *one,double *two,double *three,int m)
+{
+	cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,
+				m,m,m,1.0,one,
+	            m,two,m,0,three,m);
+  cout<<three[0]<<endl;
+};
+ 
 
 /** Calculate Coulomb coupling between chromophores I and J
  * undergoing transisions between i and j, and k and l, respectively **/
 double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
   double res, sum, temp, pos[3];
-  for (int i=0; i<mol[I].natoms; i++) {
-    for (int j=0; j<mol[J].natoms; j++) {
+  for (int ii=0; ii<mol[I].natoms; ii++) {
+    for (int jj=0; jj<mol[J].natoms; jj++) {
       double r12 = 0.;
-      for (int k=0; k<3; k++) {
-        pos[k] = mol[I].atoms[i].pos[k] - mol[J].atoms[j].pos[k];
+      for (int kk=0; kk<3; kk++) {
+        pos[kk] = mol[I].atoms[ii].pos[kk] - mol[J].atoms[jj].pos[kk];
       }
       r12 = cblas_ddot(3,pos,1,pos,1);
       r12 = sqrt(r12);
 
-      temp += mol[I].atoms[i].charges[i+j*mol[I].nstates] * mol[J].atoms[j].charges[k+l*mol[J].nstates];
+      temp += mol[I].atoms[ii].charges[i+j*mol[I].nstates] 
+            * mol[J].atoms[jj].charges[k+l*mol[J].nstates]/r12;
     }
   }
 
-  return res;
+  return temp;
+}
+
+
+/** Create Coulomb Matrix for three chormophores**/
+void createCoulomb3(Molecule *mol, double *mat) {
+  double sum;
+
+  for (int i=0; i<mol[0].nstates; i++) {
+    for (int j=0; j<mol[1].nstates; j++) {
+      for (int k=0; k<mol[2].nstates; k++) {
+        for (int l=0; l<mol[0].nstates; l++) {
+          for (int m=0; m<mol[1].nstates; m++) {
+            for (int n=0; n<mol[2].nstates; n++) {
+              int index = i + j*2 + k*4 + l*8 + m*16 + n * 32;
+              mat[index] = getCoulomb(mol,0,1,i,l,j,m) * Kronecker(k,n)
+                + getCoulomb(mol,0,2,i,l,k,n) * Kronecker(j,m)
+                + getCoulomb(mol,1,2,j,m,k,n) * Kronecker(i,l);
+              cout<<index<<" "<<mat[index]<<" "<<getCoulomb(mol,0,1,i,l,j,m)*Kronecker(k,n) <<endl;
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 
@@ -279,7 +299,12 @@ void getCharges(string filename, int nmol, Molecule *mol, int icharge, int nstat
     temps = strtok(NULL," ");
     //this should change if inter-excited transitions are to 
     //be included
-    mol->atoms[j].charges[icharge] = atof(temps.c_str());
+    if (icharge < mol->nstates) { //diagonal terms (state densities)
+      mol->atoms[j].charges[icharge+icharge*mol->nstates] = atof(temps.c_str());
+
+    } else {
+      mol->atoms[j].charges[icharge] = atof(temps.c_str());
+    }
   }
 }
 

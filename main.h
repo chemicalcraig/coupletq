@@ -14,6 +14,7 @@
 #include "pert.h"
 #include "grid.h"
 #include "print.h"
+#include "coulomb.h"
 #include "gsl/gsl_blas.h"
 using namespace std;
 

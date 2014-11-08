@@ -24,8 +24,8 @@ void pertCalc(Molecule *mol) {
     for (int j=0; j<2; j++) 
       for (int k=0; k<2; k++) {
         energies[i][j][k] = (mol[0].excenergy[i] )//- mol[0].groundenergy)
-                            + (mol[1].excenergy[j]*.5)// - mol[1].groundenergy)
-                            + (mol[2].excenergy[k]*.5);// - mol[2].groundenergy);
+                            + (mol[1].excenergy[j]*.99)// - mol[1].groundenergy)
+                            + (mol[2].excenergy[k]*1.1);// - mol[2].groundenergy);
       }
 
   double inv, temp,temp2,r12,r13,r23,sum,pos[3];

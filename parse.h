@@ -631,7 +631,7 @@ Molecule *parseComfile(ifstream &comfile) {
         for (int j=0; j<mol[i].natoms; j++) {
           //this should change if inter-excited transitions are to 
           //be included
-          mol[i].atoms[j].allocateCharges(2*(mol[i].nstates+1)-1);// = new double[2*mol[i].nstates-1];
+          mol[i].atoms[j].allocateCharges(mol[i].nstates*mol[i].nstates);// = new double[2*mol[i].nstates-1];
         }
       }
       
@@ -644,7 +644,16 @@ Molecule *parseComfile(ifstream &comfile) {
       //populated with transition densities
       //We only need the lower triangle since the 
       getCharges(temps,nmol,&mol[i],icharges,mol[i].nstates);
-    } 
+    }
+    //symmetrize charges
+    for (int iatom = 0; iatom<mol[i].natoms; iatom++) {
+      for (int icharge = 0; icharge<mol[i].nstates; icharge++) {
+        for (int icharge2 = icharge; icharge2<mol[i].nstates; icharge2++) {
+          mol[i].atoms[iatom].charges[icharge2 + icharge*mol[i].nstates] = 
+              mol[i].atoms[iatom].charges[icharge + icharge2*mol[i].nstates];
+        }
+      }
+    }
   }
   
   //get energies and dipoles of each state of each molecule
