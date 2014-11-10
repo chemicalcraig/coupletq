@@ -47,9 +47,10 @@ int main(int argc, char **argv) {
   }
 
   /** min, max, nsteps **/
-  mol[0].grid[2].setParams(3., 3., 1);
+  mol[0].grid[2].setParams(4., 4., 1);
   //mol[0].grid[2].setParams(10., 12., 200);
-  mol[2].grid[1].setParams(-1000., -12., 200);
+  if (mol[0].interaction > 1)
+    mol[2].grid[1].setParams(-1000., -12., 200);
 
 /*****************  Setting up Molecular distribution ******************/
   /** Calculate transition dipole from charges **/
@@ -71,16 +72,48 @@ int main(int argc, char **argv) {
   }
   
 //CTC test start
+  double temp[64],temp2[64],temp3[4],temp4[4],temp5[4];
   Coulomb coul;
-  coul.createCoulomb3(mol);
-  coul.diagonalize(coul.n3d,coul.evecs3,coul.evals3,coul.int3);
-  coul.createCoulomb2(mol);
-  coul.diagonalize(coul.n2d,coul.evecs2,coul.evals2,coul.int2);
-  for (int i=0; i<coul.n3d; i++) {
-    for (int j=0; j<coul.n3d; j++) {
-      cout<<i<<" "<<j<<" "<<coul.evecs3[i+j*coul.n3d]<<endl;
-    }
+  createCoulomb3(mol,coul);
+  double energies[2][2][2];
+  for (int i=0; i<2; i++) 
+    for (int j=0; j<2; j++) 
+      for (int k=0; k<2; k++) {
+        energies[i][j][k] = (mol[0].excenergy[i] )//- mol[0].groundenergy)
+                            + (mol[1].excenergy[j])// - mol[1].groundenergy)
+                            + (mol[2].excenergy[k]);// - mol[2].groundenergy);
+        int index = i+j*2+k*4;
+        //coul.int3[index+index*8] += energies[i][j][k]*27.211396;
+        cout<<index<<" energy index "<<coul.int3[index+index*8]<<endl;
+      }
+  for (int i=0; i<8; i++) {
+    cout<<i<<" energy "<<energies[i][i][i]<<endl;
+    //coul.int3[i+i*8] += energies[i][i][i];
   }
+
+  coul.diagonalize(coul.n3d,coul.evecs3,coul.evals3,coul.int3);
+
+  /** Check if evects are orthogonal **/
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,
+              coul.evecs3,8,coul.int3,8,0,temp2,8);
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
+              temp2,8,coul.evecs3,8,0,temp,8);
+
+
+  for (int i=0; i<8; i++) {
+    for (int j=0; j<8; j++) {
+      coul.dint3[i+j*8] = temp[i+j*8];
+    }
+    cout<<i<<" "<<coul.dint3[0*8+i]<<endl;
+  }
+  //coul.createCoulomb2(mol);
+  //coul.diagonalize(coul.n2d,coul.evecs2,coul.evals2,coul.int2);
+  //for (int i=0; i<coul.n3d; i++) {
+  //  for (int j=0; j<coul.n3d; j++) {
+  //    cout<<i<<" "<<j<<" "<<coul.evecs3[i+j*coul.n3d]<<endl;
+  //  }
+  //}
+//  exit(0);
 //CTC e
 
 /*******************  Done Setting up molecules *****************************/
@@ -131,7 +164,7 @@ int main(int argc, char **argv) {
       }
       break;
     case 2:
-      pertCalc(mol);
+      pertCalc(mol,coul,intham);
       break;
     }
   return 0;

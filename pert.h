@@ -11,8 +11,44 @@
 #include <iostream>
 #include "atom.h"
 #include "molecule.h"
+#include "coulomb.h"
 #include <iomanip>
 using namespace std;
+
+/** Perturbation Calculation in eigenbasis of the 3-bit 
+ * Coulomb operator **/
+void pertCalc(Molecule *mol, Coulomb coul,double *intham) {
+
+  double inv, temp,temp2,r12,r13,r23,sum,pos[3];
+  temp2 = 0.;
+  temp = 0.;
+  sum = 0.;
+  double term1;
+  term1 = 0.;
+
+  for (int i=0; i<8; i++) { //initial
+    for (int j=0; j<8; j++) {//final
+      sum = 0.;
+      term1 = 0.;
+      double energy;
+      for (int k=0; k<8; k++) {//intermediate
+        //if (i == k) continue;
+        energy = coul.evals3[i]-coul.evals3[k];
+        sum += coul.evecs3[i+k*8]*coul.evecs3[j+k*8]
+          *coul.evecs3[i+k*8]*coul.evecs3[j+k*8]
+          *coul.evals3[k]*coul.evals3[k];//*Kronecker(i,k)*Kronecker(k,j);
+      }
+
+      intham[i+j*8] = sum/energy;
+      cout<<i<<" "<<j<<" "<<intham[i+j*8]<<endl;
+    }
+  }
+/*  term1 = 0.;
+  for (int i=0; i<8; i++)
+    term1 += coul.evecs3[1+i*8]*coul.evecs3[2+i*8]*coul.evals3[i];
+  cout<<"term 1 "<<term1<<endl;
+*/}
+
 
 void pertCalc(Molecule *mol) {
   //define molecular positions

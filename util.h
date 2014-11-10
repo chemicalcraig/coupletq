@@ -9,6 +9,7 @@
 #include <iostream>
 #include "atom.h"
 #include "molecule.h"
+#include "coulomb.h"
 #include <iomanip>
 #include "gsl/gsl_blas.h"
 using namespace std;
@@ -19,20 +20,11 @@ using namespace std;
 /********************************************************
  * Functions
  * *******************************************************/
-/** Wrap DGEMM **/
-void multmm(double *one,double *two,double *three,int m)
-{
-	cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,
-				m,m,m,1.0,one,
-	            m,two,m,0,three,m);
-  cout<<three[0]<<endl;
-};
- 
-
 /** Calculate Coulomb coupling between chromophores I and J
  * undergoing transisions between i and j, and k and l, respectively **/
 double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
   double res, sum, temp, pos[3];
+  temp = 0.;
   for (int ii=0; ii<mol[I].natoms; ii++) {
     for (int jj=0; jj<mol[J].natoms; jj++) {
       double r12 = 0.;
@@ -41,16 +33,49 @@ double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
       }
       r12 = cblas_ddot(3,pos,1,pos,1);
       r12 = sqrt(r12);
-
       temp += mol[I].atoms[ii].charges[i+j*mol[I].nstates] 
             * mol[J].atoms[jj].charges[k+l*mol[J].nstates]/r12;
+     /* if (I==0 && J==1 && i==0 && j==1 && k==1 && l==0){
+        cout<<"charges "<<mol[I].atoms[ii].charges[i+j*mol[I].nstates]<<" "
+                  <<mol[J].atoms[jj].charges[k+l*mol[J].nstates]<<endl;
+      }
+*/
     }
   }
-
   return temp;
 }
 
+void createCoulomb3(Molecule *mol, Coulomb coul) {
+  for (int i=0; i<mol[0].nstates; i++) {
+    for (int j=0; j<mol[1].nstates; j++) {
+      for (int k=0; k<mol[2].nstates; k++) {
+        for (int l=0; l<mol[0].nstates; l++) {
+          for (int m=0; m<mol[1].nstates; m++) {
+            for (int n=0; n<mol[2].nstates; n++) {
+              int index = i + j*2 + k*4 + l*8 + m*16 + n * 32;
+                coul.int3[index] = getCoulomb(mol,0,1,i,l,j,m) * Kronecker(k,n);
+                coul.int3[index] += getCoulomb(mol,0,2,i,l,k,n) * Kronecker(j,m);
+                coul.int3[index] += getCoulomb(mol,1,2,j,m,k,n) * Kronecker(i,l);
+   //             if (i==1 && j==0 && l==0 && m == 1 && k==n)
+   //               cout<<"temp get "<<getCoulomb(mol,0,1,i,l,j,m)<<endl;
 
+                cout<<i+j*2+k*4<<" "<<l*8+m*16+n*32<<" "<<i<<" "<<j<<" "<<k<<" "<<l<<" "<<m<<" "<<n<<" "<<index<<" index "<<endl;
+            }
+          }
+        }
+      }
+    }
+  }
+
+}
+/** Wrap DGEMM **/
+void multmm(double *one,double *two,double *three,int m)
+{
+	cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,
+				m,m,m,1.0,one,
+	            m,two,m,0,three,m);
+};
+ 
 /** Create Coulomb Matrix for three chormophores**/
 void createCoulomb3(Molecule *mol, double *mat) {
   double sum;
@@ -65,7 +90,7 @@ void createCoulomb3(Molecule *mol, double *mat) {
               mat[index] = getCoulomb(mol,0,1,i,l,j,m) * Kronecker(k,n)
                 + getCoulomb(mol,0,2,i,l,k,n) * Kronecker(j,m)
                 + getCoulomb(mol,1,2,j,m,k,n) * Kronecker(i,l);
-              cout<<index<<" "<<mat[index]<<" "<<getCoulomb(mol,0,1,i,l,j,m)*Kronecker(k,n) <<endl;
+//              cout<<index<<" "<<mat[index]<<" "<<getCoulomb(mol,0,1,i,l,j,m)*Kronecker(k,n) <<endl;
             }
           }
         }
@@ -95,7 +120,7 @@ double computeCoupling(Molecule mold, Molecule mola,int dcharge, int acharge) {
           *(mold.atoms[i].pos[k] - mola.atoms[j].pos[k]);
       }
       double rda = sqrt(rda2);
-      cout<<i<<" "<<j<<" "<<rda<<" r12 "<<endl;
+      //cout<<i<<" "<<j<<" "<<rda<<" r12 "<<endl;
       cout<<"charges "<<mold.atoms[i].charges[dcharge]<<" "<<mola.atoms[j].charges[acharge]<<endl;
       interaction = mold.atoms[i].charges[dcharge] * mola.atoms[j].charges[acharge] / rda;
       res += interaction;

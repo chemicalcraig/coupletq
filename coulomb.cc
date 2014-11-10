@@ -2,7 +2,7 @@
 
 Coulomb::Coulomb() {
   this->n2d = 4;
-  this->n3d = 8;
+  n3d = 8;
 
   //2-bit stuff
   this->int2 = new double[this->n2d*this->n2d];
@@ -11,12 +11,71 @@ Coulomb::Coulomb() {
   this->dint2 = new double[this->n2d*this->n2d];
   
   //3-bit stuff
-  this->int3 = new double[this->n3d*this->n3d];
-  this->evals3 = new double[this->n3d*this->n3d];
-  this->evecs3 = new double[this->n3d*this->n3d];
-  this->dint3 = new double[this->n3d*this->n3d];
+  int3 = new double[64];
+  this->evals3 = new double[64];
+  evecs3 = new double[64];
+  dint3 = new double[64];
+}
+
+/** Diagonalize the coulomb matrix **/
+void Coulomb::diagonalizenonsymm(int nd, double *evc, double *evl, double *mat) {
+cout.precision(10);
+  /** Copy 3-bit interaction into evecs **/
+  for (int i=0; i<nd; i++) {
+    for (int j=0; j<nd; j++) {
+      //if (i==j)
+        evc[i+j*nd] = mat[i+j*nd];
+      //else
+      //  this->evecs3[i+j*this->n3d] = 0;
+    }
+  }
+  
+  //Stuff for lapack diagonalization
+  char balanc = 'B';
+  char jobvl = 'N';
+  char jobvr = 'V';
+  char sense = 'V';
+  int lwork = 100000000;
+  double *evalr = new double [nd];
+  double *evali = new double [nd];
+  double *work = new double[lwork];
+  int liwork = 10000000;
+  int *iwork = new int [liwork];
+  int info; 
+  double leftevec[nd*nd];
+  double rightevec[nd*nd];
+  int ilo,ihi;
+  double scale[nd];
+  double abnrm;
+  double rcond[nd];
+  double rcondv[nd];
+
+
+  /** do the diagonalizing, with evals and evecs **/
+  dgeevx_(&balanc,&jobvl,&jobvr,&sense,&nd,evc,&nd,evalr,evali,leftevec,&nd,rightevec,
+          &nd,&ilo,&ihi,scale,&abnrm,rcond,rcondv,work,&lwork,iwork,&info);
+  //dsyevd_(&jobz, &uplo, &nd, evc, &nd,evl, work, &lwork,
+	//          iwork, &liwork, &info);
+    for (int i=0; i<nd; i++) {
+    for (int j=0; j<nd; j++) {
+        evc[i+j*nd] = rightevec[i+j*nd];
+    }
+  }
+  
+
+  for (int i=0; i<nd; i++) {
+  cout<<"eval "<<i<<" = "<<evalr[i]<<" "<<evali[i]<<endl;
+//    for (int j=0; j<nd; j++) {
+//        cout<<i<<" "<<j<<" "<<evc[i+j*nd]<<endl;
+//    }
+  }
+
+  delete[] work;
+  delete[] iwork;
+  
 
 }
+
 
 /** Diagonalize the coulomb matrix **/
 void Coulomb::diagonalize(int nd, double *evc, double *evl, double *mat) {
@@ -47,9 +106,9 @@ cout.precision(10);
   delete[] iwork;
   for (int i=0; i<nd; i++) {
   cout<<"eval "<<i<<" = "<<evl[i]<<endl;
-    for (int j=0; j<nd; j++) {
-        cout<<i<<" "<<j<<" "<<evc[i+j*nd]<<endl;
-    }
+//    for (int j=0; j<nd; j++) {
+//        cout<<i<<" "<<j<<" "<<evc[i+j*nd]<<endl;
+//    }
   }
 }
 
@@ -107,9 +166,10 @@ void Coulomb::createCoulomb3(Molecule *mol) {
           for (int m=0; m<mol[1].nstates; m++) {
             for (int n=0; n<mol[2].nstates; n++) {
               int index = i + j*2 + k*4 + l*8 + m*16 + n * 32;
-              this->int3[index] = getCoulomb(mol,0,1,i,l,j,m) * Kronecker(k,n)
-                + getCoulomb(mol,0,2,i,l,k,n) * Kronecker(j,m)
-                + getCoulomb(mol,1,2,j,m,k,n) * Kronecker(i,l);
+                int3[index] = getCoulomb(mol,0,1,i,l,j,m) * Kronecker(k,n);
+                int3[index] += getCoulomb(mol,0,2,i,l,k,n) * Kronecker(j,m);
+                int3[index] += getCoulomb(mol,1,2,j,m,k,n) * Kronecker(i,l);
+              cout<<i<<" "<<j<<" "<<k<<" "<<l<<" "<<m<<" "<<n<<" "<<index<<" index"<<endl;
             }
           }
         }

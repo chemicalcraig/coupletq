@@ -36,4 +36,8 @@ Molecule *mol;
 
 //exciton coupling constant
 double coupling;
+
+//Second order interaction matrix in 3-bit eigenbasis
+double intham[64];
+
 #endif // MAIN_H
