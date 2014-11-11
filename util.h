@@ -20,6 +20,20 @@ using namespace std;
 /********************************************************
  * Functions
  * *******************************************************/
+/** window function **/
+double window(double center, double value, double delta, int which) {
+  switch (which) {
+    case 0: //square well
+      double sval = value-center;
+      sval *= sval;
+      if (sval <= delta*delta)
+        return 1;
+      else
+        return 0;
+      break;
+  }
+}
+
 /** Calculate Coulomb coupling between chromophores I and J
  * undergoing transisions between i and j, and k and l, respectively **/
 double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {

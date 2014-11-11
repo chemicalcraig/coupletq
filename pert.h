@@ -17,37 +17,59 @@ using namespace std;
 
 /** Perturbation Calculation in eigenbasis of the 3-bit 
  * Coulomb operator **/
-void pertCalc(Molecule *mol, Coulomb coul,double *intham) {
+void pertCalc(Molecule *mol, Coulomb coul,double *intham,double *energies) {
 
-  double inv, temp,temp2,r12,r13,r23,sum,pos[3];
+  double inv, temp,temp2,temp3,r12,r13,r23,sum,pos[3];
   temp2 = 0.;
   temp = 0.;
   sum = 0.;
-  double term1;
-  term1 = 0.;
+  temp3 = 0.;
 
   for (int i=0; i<8; i++) { //initial
     for (int j=0; j<8; j++) {//final
+      temp2 = 0.;
+      temp3 = 0.;
+      for (int k=0; k<8; k++) {
+        temp2 += energies[i]*coul.evecs3[i+k*8]*coul.evecs3[i+k*8];
+        temp3 += energies[j]*coul.evecs3[j+k*8]*coul.evecs3[j+k*8];
+      }
       sum = 0.;
-      term1 = 0.;
       double energy;
-      for (int k=0; k<8; k++) {//intermediate
-        //if (i == k) continue;
-        energy = coul.evals3[i]-coul.evals3[k];
-        sum += coul.evecs3[i+k*8]*coul.evecs3[j+k*8]
-          *coul.evecs3[i+k*8]*coul.evecs3[j+k*8]
-          *coul.evals3[k]*coul.evals3[k];//*Kronecker(i,k)*Kronecker(k,j);
+      if (i != j) {
+        for (int k=0; k<8; k++) {//intermediate
+          if (i == k || j==k) continue;
+          energy = (coul.evals3[i]-coul.evals3[k])*(coul.evals3[j]-coul.evals3[k]);
+          temp = coul.evecs3[i+k*8]*coul.evecs3[j+k*8]
+            *coul.evecs3[i+k*8]*coul.evecs3[j+k*8];
+
+          sum += temp*coul.evals3[k]*coul.evals3[k]/energy;
+        
+          //if ((i == 1 && j==2)||(i==2 && j==1)) cout<<i<<" "<<j<<" "<<k<<" sum adding "<<sum<<" "<<temp<<endl;
+        }
+      } else {
+      /*  for (int k=0; k<8; k++) {
+          if (i==k) continue;
+          energy = (coul.evals3[k]-coul.evals3[i])*(coul.evals3[k]-coul.evals3[i]);
+          sum += coul.evecs3[i+k*8]*coul.evecs3[i+k*8]
+            *coul.evecs3[i+k*8]*coul.evecs3[i+k*8]
+            *coul.evals3[k]*coul.evals3[k]/energy;
+        }
+        sum *= -0.5;*/
       }
 
-      intham[i+j*8] = sum/energy;
+      intham[i+j*8] = sum;
       cout<<i<<" "<<j<<" "<<intham[i+j*8]<<endl;
     }
   }
-/*  term1 = 0.;
-  for (int i=0; i<8; i++)
+ double term1 = 0.;
+ temp = 0.;
+  for (int i=0; i<8; i++) {
+    //if (i==1) continue;
     term1 += coul.evecs3[1+i*8]*coul.evecs3[2+i*8]*coul.evals3[i];
-  cout<<"term 1 "<<term1<<endl;
-*/}
+    temp += energies[3]*coul.evecs3[3+i*8]*coul.evecs3[3+i*8];
+    }
+  cout<<"term 1 "<<term1<<" temp "<<temp<<endl;
+}
 
 
 void pertCalc(Molecule *mol) {

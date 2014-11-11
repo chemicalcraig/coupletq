@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
   mol[0].grid[2].setParams(4., 4., 1);
   //mol[0].grid[2].setParams(10., 12., 200);
   if (mol[0].interaction > 1)
-    mol[2].grid[1].setParams(-1000., -12., 200);
+    mol[2].grid[1].setParams(-4., -12., 200);
 
 /*****************  Setting up Molecular distribution ******************/
   /** Calculate transition dipole from charges **/
@@ -75,22 +75,26 @@ int main(int argc, char **argv) {
   double temp[64],temp2[64],temp3[4],temp4[4],temp5[4];
   Coulomb coul;
   createCoulomb3(mol,coul);
-  double energies[2][2][2];
+  double energies[8];
   for (int i=0; i<2; i++) 
     for (int j=0; j<2; j++) 
       for (int k=0; k<2; k++) {
-        energies[i][j][k] = (mol[0].excenergy[i] )//- mol[0].groundenergy)
+        int index = i+j*2+k*4;
+        energies[index] = (mol[0].excenergy[i] )//- mol[0].groundenergy)
                             + (mol[1].excenergy[j])// - mol[1].groundenergy)
                             + (mol[2].excenergy[k]);// - mol[2].groundenergy);
-        int index = i+j*2+k*4;
-        //coul.int3[index+index*8] += energies[i][j][k]*27.211396;
+        energies[index] *= 27.211396;
+
+   //     coul.int3[index+index*8] += energies[i][j][k]*27.211396;
         cout<<index<<" energy index "<<coul.int3[index+index*8]<<endl;
       }
+  /** Filter Coulomb Matrix for energy conservation **/
   for (int i=0; i<8; i++) {
-    cout<<i<<" energy "<<energies[i][i][i]<<endl;
-    //coul.int3[i+i*8] += energies[i][i][i];
+    for (int j=0; j<8; j++) {
+      coul.int3[i+j*8] *= window(energies[i],energies[j],2,0);
+    }
   }
-
+  
   coul.diagonalize(coul.n3d,coul.evecs3,coul.evals3,coul.int3);
 
   /** Check if evects are orthogonal **/
@@ -164,7 +168,7 @@ int main(int argc, char **argv) {
       }
       break;
     case 2:
-      pertCalc(mol,coul,intham);
+      pertCalc(mol,coul,intham,energies);
       break;
     }
   return 0;
