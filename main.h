@@ -16,6 +16,7 @@
 #include "print.h"
 #include "coulomb.h"
 #include "gsl/gsl_blas.h"
+#include "gsl/gsl_eigen.h"
 using namespace std;
 
 /*****************************
@@ -39,5 +40,5 @@ double coupling;
 
 //Second order interaction matrix in 3-bit eigenbasis
 double intham[64];
-
+double int3[64];
 #endif // MAIN_H

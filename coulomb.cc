@@ -105,7 +105,11 @@ cout.precision(10);
   delete[] work;
   delete[] iwork;
   for (int i=0; i<nd; i++) {
-  cout<<"eval "<<i<<" = "<<evl[i]<<endl;
+    double sum = 0.;
+    for (int j=0; j<8; j++) {
+      sum += mat[i+j*8]*evc[0+j*8];
+    }
+    cout<<"eval "<<i<<" = "<<evl[i]<<", info = "<<info<<" "<<sum<<endl;
 //    for (int j=0; j<nd; j++) {
 //        cout<<i<<" "<<j<<" "<<evc[i+j*nd]<<endl;
 //    }

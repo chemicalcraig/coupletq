@@ -47,13 +47,14 @@ double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
       }
       r12 = cblas_ddot(3,pos,1,pos,1);
       r12 = sqrt(r12);
+
       temp += mol[I].atoms[ii].charges[i+j*mol[I].nstates] 
             * mol[J].atoms[jj].charges[k+l*mol[J].nstates]/r12;
-     /* if (I==0 && J==1 && i==0 && j==1 && k==1 && l==0){
-        cout<<"charges "<<mol[I].atoms[ii].charges[i+j*mol[I].nstates]<<" "
-                  <<mol[J].atoms[jj].charges[k+l*mol[J].nstates]<<endl;
-      }
-*/
+     // if (I==0 && J==1 && i==0 && j==1 && k==1 && l==0){
+     //   cout<<"charges "<<temp<<" temp -< "<<mol[I].atoms[ii].charges[i+j*mol[I].nstates]<<" "
+     //             <<mol[J].atoms[jj].charges[k+l*mol[J].nstates]<<endl;
+     // }
+
     }
   }
   return temp;
@@ -67,20 +68,25 @@ void createCoulomb3(Molecule *mol, Coulomb coul) {
           for (int m=0; m<mol[1].nstates; m++) {
             for (int n=0; n<mol[2].nstates; n++) {
               int index = i + j*2 + k*4 + l*8 + m*16 + n * 32;
-                coul.int3[index] = getCoulomb(mol,0,1,i,l,j,m) * Kronecker(k,n);
-                coul.int3[index] += getCoulomb(mol,0,2,i,l,k,n) * Kronecker(j,m);
-                coul.int3[index] += getCoulomb(mol,1,2,j,m,k,n) * Kronecker(i,l);
+              int index3 = l+m*2+n*4;
+              int index2 = i+j*2+k*4;
+              coul.int3[index2+index3*8] = getCoulomb(mol,0,1,i,l,j,m) * Kronecker(k,n)
+                                          + getCoulomb(mol,0,2,i,l,k,n) * Kronecker(j,m)
+                                          + getCoulomb(mol,1,2,j,m,k,n) * Kronecker(i,l);
    //             if (i==1 && j==0 && l==0 && m == 1 && k==n)
    //               cout<<"temp get "<<getCoulomb(mol,0,1,i,l,j,m)<<endl;
 
-                cout<<i+j*2+k*4<<" "<<l*8+m*16+n*32<<" "<<i<<" "<<j<<" "<<k<<" "<<l<<" "<<m<<" "<<n<<" "<<index<<" index "<<endl;
+ cout<<"making coulomb "<<index2<<" "<<index3<<" "<<i<<" "<<j<<" "<<k<<" "<<l<<" "<<m<<" "<<n<<" "
+        <<coul.int3[index2+index3*8]<<" "<<getCoulomb(mol,0,1,i,l,j,m)*Kronecker(k,n)<<" "
+        <<getCoulomb(mol,0,2,i,l,k,n) * Kronecker(j,m)<<" " 
+        <<getCoulomb(mol,1,2,j,m,k,n) * Kronecker(i,l)<<endl;
+                //cout<<index2<<" "<<index3<<" "<<i<<" "<<j<<" "<<k<<" "<<l<<" "<<m<<" "<<n<<" "<<index<<" index "<<endl;
             }
           }
         }
       }
     }
   }
-
 }
 /** Wrap DGEMM **/
 void multmm(double *one,double *two,double *three,int m)
@@ -101,10 +107,11 @@ void createCoulomb3(Molecule *mol, double *mat) {
           for (int m=0; m<mol[1].nstates; m++) {
             for (int n=0; n<mol[2].nstates; n++) {
               int index = i + j*2 + k*4 + l*8 + m*16 + n * 32;
-              mat[index] = getCoulomb(mol,0,1,i,l,j,m) * Kronecker(k,n)
+              int index3 = l+m*2+n*4;
+              int index2 = i+j*2+k*4;
+              mat[index2+index3*8] = getCoulomb(mol,0,1,i,l,j,m) * Kronecker(k,n)
                 + getCoulomb(mol,0,2,i,l,k,n) * Kronecker(j,m)
                 + getCoulomb(mol,1,2,j,m,k,n) * Kronecker(i,l);
-//              cout<<index<<" "<<mat[index]<<" "<<getCoulomb(mol,0,1,i,l,j,m)*Kronecker(k,n) <<endl;
             }
           }
         }
