@@ -17,35 +17,81 @@ using namespace std;
 
 /** Perturbation Calculation in eigenbasis of the 3-bit 
  * Coulomb operator **/
-void pertCalc(Molecule *mol, Coulomb coul, double *energies,double *int3,double dum) {
-  cout<<" *** in pertCalc *** "<<endl;
-  for (int i=0; i<8; i++) coul.int3[i+i*8] = 0.;
+void pertCalcNonDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double dum) {
+  cout<<" *** in pertCalc, using constant energy differences *** "<<endl;
+  
+  /** Scale Coulomb interaction NB: Fix this! **/
   for (int i=0; i<8; i++) { //initial state
-    
     for (int j=0; j<8; j++) { //final state
-cout<<i<<" "<<j<<" "<<coul.int3[i+j*8]<<" "<<int3[i+j*8]<<" "<<coul.evecs3[i+j*8]<<endl;
       coul.int3[i+j*8] *= 10.;
-
     }
   }
   double res[64];
+  
+  //Make diagonal hamiltonian with exciton energies on the diagonal
+  double sum = 0.;
+  for (int i=0; i<8; i++) { //initial state
+    for (int j=0; j<8; j++) { //final state
+      sum = 0.;
+      for (int k=0; k<8; k++) { //intermediate state
+        if (i==k) continue;
+        if (energies[i] != energies[k])
+          sum += coul.int3[i+k*8]*coul.int3[k+j*8]/(energies[i]-energies[k]);
+        else //CTC This is an appoximation!
+          sum += coul.int3[i+k*8]*coul.int3[k+j*8]/1;//(energies[i]-energies[k]);
+          if (i==1 && j==6) 
+            cout<<"<1|V|"<<k<<"><"<<k<<"|V|6> = "<<sum<<" "<<coul.int3[k+j*8]<<" "<<coul.int3[i+k*8]<<endl;
+      }
+      res[i+j*8] = sum*window(energies[i],energies[j],1,0);
+    }
+  }
+ for (int i=0; i<8; i++)
+   for (int j=0; j<8; j++) {
+      cout<<i<<" "<<j<<" "<<res[i+j*8]
+      <<" <--interaction, coulomb --> "
+      <<coul.int3[i+j*8]<<endl;
+  }
+}
+void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double dum) {
+  cout<<" *** in pertCalc, using constant energy differences *** "<<endl;
+  
+  /** Scale Coulomb interaction NB: Fix this! **/
+  for (int i=0; i<8; i++) { //initial state
+    for (int j=0; j<8; j++) { //final state
+      coul.int3[i+j*8] *= 10.;
+    }
+  }
+  double res[64];
+  
   //Make diagonal hamiltonian with exciton energies on the diagonal
   double ham[64],tildeint[64];
   for (int i=0; i<8; i++) {
     ham[i+i*8] = energies[i];
   }
+
   //Make C.ham.C^T
   double ham2[64],tempm[64],tempm2[64];
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
               coul.evecs3,8,ham,8,0,tempm,8);
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,8,8,8,1.,
               tempm,8,coul.evecs3,8,0,ham2,8);
-  //Make C.V.C^T
+  //Make V.V
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
               coul.int3,8,coul.int3,8,0,tempm,8);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,8,8,8,1.,
-              tempm,8,coul.evecs3,8,0,tildeint,8);
+  double sum = 0.;
   
+  for (int i=0; i<8; i++) {
+    for (int j=0; j<8; j++) {
+      sum = 0.;
+      for (int k=0; k<8; k++) {
+        sum += coul.int3[i+k*8]*coul.int3[k+j*8]
+                *window(energies[i],energies[j],1,0)
+                *window(energies[i],energies[k],1,0)
+                *window(energies[j],energies[k],1,0);
+      }
+      tempm[i+j*8] = sum;
+    }
+  }
   double numerator, denominator;
   for (int i=0; i<8; i++) { //initial state
     for (int j=0; j<8; j++) { //final state
@@ -83,7 +129,7 @@ cout<<i<<" "<<j<<" "<<coul.int3[i+j*8]<<" "<<int3[i+j*8]<<" "<<coul.evecs3[i+j*8
         denominator += sum3-sum4;//coul.evals3[i] - coul.evals3[k];//sum3-sum4;
       }
       */
-      res[i+j*8] = tempm[i+j*8];//numerator/(denominator );
+      res[i+j*8] = tempm[i+j*8];//*window(energies[i],energies[j],1,0);//numerator/(denominator );
     }
   }
   cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,

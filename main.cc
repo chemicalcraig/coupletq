@@ -47,10 +47,10 @@ int main(int argc, char **argv) {
   }
 
   /** min, max, nsteps **/
-  mol[0].grid[2].setParams(4., 4., 1);
+  mol[1].grid[2].setParams(3., 4., 1);
   //mol[0].grid[2].setParams(10., 12., 200);
   if (mol[0].interaction > 1)
-    mol[2].grid[2].setParams(-4000., -4., 1);
+    mol[2].grid[2].setParams(-3., -4., 1);
 
 /*****************  Setting up Molecular distribution ******************/
   /** Calculate transition dipole from charges **/
@@ -82,10 +82,10 @@ int main(int argc, char **argv) {
       for (int k=0; k<2; k++) {
         int index = i+j*2+k*4;
         energies[index] = (mol[0].excenergy[i] )//- mol[0].groundenergy)
-                            + (mol[1].excenergy[j])// - mol[1].groundenergy)
-                            + (mol[2].excenergy[k]);// - mol[2].groundenergy);
+                            + (mol[1].excenergy[j])*0.5// - mol[1].groundenergy)
+                            + (mol[2].excenergy[k])*0.5;// - mol[2].groundenergy);
         energies[index] *= 27.211396;
-
+cout<<"energies "<<index<<" "<<energies[index]<<endl;
         //coul.int3[index+index*8] += energies[index];
     //    cout<<index<<" energy index "<<coul.int3[index+index*8]<<endl;
       }
@@ -96,7 +96,9 @@ int main(int argc, char **argv) {
   for (int i=0; i<8; i++) {
     for (int j=0; j<8; j++) {
       //int3[i+j*8] = coul.int3[i+j*8];
-      coul.int3[i+j*8] *= window(energies[i],energies[j],2,0);
+      //coul.int3[i+j*8] *= window(energies[i],energies[j],2,0);
+      //cout<<i<<" "<<j<<" "<<window(energies[i],energies[j],2,0)<<"   window"<<endl;
+
     }
   }
 
@@ -203,7 +205,8 @@ int main(int argc, char **argv) {
       break;
     case 2:
       double dum;
-      pertCalc(mol,coul,energies,int3,dum);
+      //pertCalcDegen(mol,coul,energies,int3,dum);
+      pertCalcNonDegen(mol,coul,energies,int3,dum);
       //pertCalc(mol,coul,intham,energies);
       break;
     }
