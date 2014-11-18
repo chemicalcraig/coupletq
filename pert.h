@@ -89,22 +89,7 @@ void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
               tempm,8,coul.evecs3,8,0,tildeint,8);
 
-
   double sum = 0.;
-  
-  for (int i=0; i<8; i++) {
-    //coul.evals3[i] *= 27.211396;
-    for (int j=0; j<8; j++) {
-      sum = 0.;
-      for (int k=0; k<8; k++) {
-        sum += coul.int3[i+k*8]*coul.int3[k+j*8]
-                *window(energies[i],energies[j],1,0)
-                *window(energies[i],energies[k],1,0)
-                *window(energies[j],energies[k],1,0);
-      }
-      tempm[i+j*8] = sum;
-    }
-  }
   double numerator, denominator;
   for (int i=0; i<8; i++) { //initial state
     for (int j=0; j<8; j++) { //final state
@@ -164,7 +149,7 @@ void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
  for (int i=0; i<8; i++)
    for (int j=0; j<8; j++) cout<<i<<"   "<<j<<"   "<<res[i+j*8]<<"   "
       <<tildeint[i+j*8]*window(energies[i],energies[j],1,0)<<"       <"<<i<<"|V|"<<j<<"> = "<<coul.int3[i+j*8]<<endl;
-  dum = tildeint[1+6*8];
+  dum = res[1+6*8];
 }
 
 void pertCalc(Molecule *mol, Coulomb coul,double *intham,double *energies) {

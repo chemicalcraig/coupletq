@@ -47,12 +47,12 @@ int main(int argc, char **argv) {
   }
 
   /** min, max, nsteps **/
-  mol[1].grid[0].setParams(-4., -4., 1);
+  mol[1].grid[0].setParams(4., 12., 100);
   //mol[1].grid[1].setParams(3.,3.,1);
-  //mol[1].grid[2].setParams(3.,3.,1);
+  //mol[1].grid[2].setParams(4.,12.,100);
   //mol[1].rotateTheta(M_PI/4,1);
   if (mol[0].interaction > 1) {
-    mol[2].grid[0].setParams(4., 12., 100);
+    mol[2].grid[0].setParams(-4., -12., 100);
     //mol[2].grid[1].setParams(-3.,-3.,1);
     //mol[2].grid[2].setParams(4.,12.,100);
     //mol[2].rotateTheta(-1*M_PI/4,1);
@@ -93,7 +93,8 @@ int main(int argc, char **argv) {
                             + (mol[2].excenergy[k]);// - mol[2].groundenergy);
         energies[index] *= 27.211396;
 cout<<"energies "<<index<<" "<<energies[index]<<endl;
-        coul.int3[index+index*8] += energies[index];
+        if (mol[0].interaction>1)
+          coul.int3[index+index*8] += energies[index];
     //    cout<<index<<" energy index "<<coul.int3[index+index*8]<<endl;
       }
   /** Filter Coulomb Matrix for energy conservation **/
@@ -150,7 +151,7 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
 
   for (int i=0; i<8; i++) {
     for (int j=0; j<8; j++) {
-      cout<<i<<" "<<j<<" diagonal? "<<temp[i+j*8]<<endl;
+      //cout<<i<<" "<<j<<" diagonal? "<<temp[i+j*8]<<endl;
       //coul.dint3[i+j*8] = temp[i+j*8];
     }
   }
@@ -185,18 +186,18 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
 
       }
 */
-      for (int zi=0; zi<mol[0].grid[2].ngrid; zi++) {
+      for (int zi=0; zi<mol[1].grid[2].ngrid; zi++) {
         //angle = 0.;
-        slip = mol[0].grid[1].min;
+        //slip = mol[0].grid[1].min;
         //for (int thetai=0; thetai<mol[0].grid.ntheta; thetai++) {
         //for (int islip=0; islip<mol[0].grid[2].ngrid; islip++) {
           fretCalc(mol,coupling);          
-          print.appendData2d(outfile2,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,coupling);
+          print.appendData2d(outfile2,mol[1].grid[2].min+zi*mol[1].grid[2].dgrid,coupling);
           //print.appendData3d(outfile2,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling);
 
           //pdaCalc(mol,coupling2);
           //print.appendData3d(pdafile,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling2);
-          print.appendData2d(pdafile,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,coupling2);
+          //print.appendData2d(pdafile,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,coupling2);
           
           //mol[0].rotateCom(mol[0].grid.dtheta,mol[1].com);
           //mol[0].translate(1,mol[0].grid[1].dgrid);
@@ -205,15 +206,16 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
 
         //reset x and y coordinates, keep z coordinate
         //mol[0].resetall();
-        mol[0].resetExcept(2);
+        //mol[0].resetExcept(2);
 
         //translate vertically
-        mol[0].translate(2,mol[0].grid[2].dgrid);
+        mol[1].translate(2,mol[1].grid[2].dgrid);
         //mol[0].setCom();
       }
       break;
     case 2:
       double dum;
+      int whichaxis = 0;
       //pertCalcDegen(mol,coul,energies,int3,dum);
       //pertCalc(mol,coul,intham,energies);
       gsl_matrix_view m = gsl_matrix_view_array(int3,8,8);
@@ -223,16 +225,23 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
       gsl_eigen_symmv(&m.matrix,eval,evec,w);
 
 
-      for (int zi=0; zi<mol[2].grid[0].ngrid; zi++) {
-        print.appendData2d(outfile2,mol[2].grid[0].min+zi*mol[2].grid[0].dgrid,dum);
+      for (int zi=0; zi<mol[1].grid[whichaxis].ngrid; zi++) {
         //pertCalcNonDegen(mol,coul,energies,int3,&dum);
         pertCalcDegen(mol,coul,energies,int3,dum);
-        mol[2].translate(0,mol[2].grid[0].dgrid);
+        print.appendData2d(outfile2,mol[1].grid[whichaxis].min+zi*mol[1].grid[whichaxis].dgrid,dum);
+        mol[1].translate(whichaxis,mol[1].grid[whichaxis].dgrid);
         
         createCoulomb3(mol,coul);
         createCoulomb3(mol,int3);
+        for (int i=0; i<8; i++) {
+          coul.int3[i+i*8] += energies[i];
+          for (int j=0; j<8; j++) {
+            if (i!=j)
+              coul.int3[i+j*8] *= 10;
+          }
+        }
         m = gsl_matrix_view_array(int3,8,8);
-        w = gsl_eigen_symmv_alloc(8);
+        //w = gsl_eigen_symmv_alloc(8);
         gsl_eigen_symmv(&m.matrix,eval,evec,w);
 
         double vec[8],vec2[8];
@@ -241,9 +250,11 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
         for (int i=0; i<8; i++) {
           sum = 0.;
           coul.evals3[i] = gsl_vector_get(eval,i);
+          //coul.int3[i+i*8] += energies[i];
           //cout<<"evals "<<i<<" "<<coul.evals3[i]<<endl;
           for (int j=0; j<8; j++) {
-            sum += coul.int3[i+j*8]*vec[j];
+           // if (i!=j)
+             // coul.int3[i+j*8] *= 10;
             coul.evecs3[i+j*8] = gsl_matrix_get(evec,i,j);
             cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*8]<<endl;
           }
