@@ -73,7 +73,7 @@ bool parseLog(string str, Molecule *mol) {
             temps.compare(0,6,"NROOTS")==0 ||
             temps.compare(0,6,"Nroots")==0 ||
             temps.compare(0,6,"NRoots")==0) {
-
+          
             temps = strtok(tempc," ");
             temps = strtok(NULL," ");
             mol->setnroots(atoi(temps.c_str()));
@@ -388,7 +388,7 @@ bool parseLog(string str, Molecule *mol) {
 
 /** Get TDDFT information from logfile **/
 bool getTDDFT(string str, Molecule *mol) {
-
+    
     ifstream infile;
     infile.precision(9);
     infile.open(str.c_str());
@@ -401,14 +401,13 @@ bool getTDDFT(string str, Molecule *mol) {
     while(infile.getline(tempc, 1000)) {
       string temps(tempc);
      
-    /** Get Stuff from TDDFT directive **/
+    /** Get Number of Roots in TDDFT **/
       if ((temps.compare(0,5,tddft_task_str1,0,5) == 0 ||
         temps.compare(0,5,tddft_task_str2,0,5) == 0 ||
         temps.compare(0,5,tddft_task_str3,0,5) == 0) &&
         tddftstack) {
         
         while (temps.compare(0,3,"end",0,3) !=0 ) {
-          //get nroots
           if (temps.compare(0,6,"nroots")==0 ||
             temps.compare(0,6,"NROOTS")==0 ||
             temps.compare(0,6,"Nroots")==0 ||
@@ -419,24 +418,6 @@ bool getTDDFT(string str, Molecule *mol) {
             mol->setnroots(atoi(temps.c_str()));
             tddftstack = false;
           } //end nroots
-
-          //get spin state
-          if ((temps.compare(0,9,"notriplet")==0) || 
-              (temps.compare(0,9,"Notriplet")==0) ||
-              (temps.compare(0,9,"NOTRIPLET")==0) ||
-              (temps.compare(0,9,"NoTriplet")==0)) {
-            mol->spinstate = 0; 
-            cout<<"Spin state = "<<mol->spinstate<<endl;
-          }
-
-          if ((temps.compare(0,9,"nosinglet")==0) || 
-              (temps.compare(0,9,"Nosinglet")==0) ||
-              (temps.compare(0,9,"NOSINGLET")==0) ||
-              (temps.compare(0,9,"NoSinglet")==0)) {
-            mol->spinstate = 1;
-            cout<<"Spin state = "<<mol->spinstate<<endl;
-          }
-
           infile>>ws;
           infile.getline(tempc,1000);
           temps = tempc;
@@ -477,14 +458,12 @@ bool getTDDFT(string str, Molecule *mol) {
       
       //Get TDDFT information
       if (temps.compare(0,10,tddft_str,0,10) == 0) {
-
         mol->allocateMemTddft();
-        
+      
         //Get the ground state energy
         getnlines(infile,tempc,2,1000);
         temps = strtok(tempc," ");
         for (int i=0; i<3; i++) temps = strtok(NULL," ");
-
         mol->groundenergy = atof(temps.c_str());
         getnlines(infile,tempc,2,1000);
 
@@ -498,9 +477,7 @@ bool getTDDFT(string str, Molecule *mol) {
           mol->excenergy[root+1] = atof(temps.c_str());
 
           getnlines(infile,tempc,2,1000);
-          
-          //skip for triplet
-        if (mol->spinstate == 0) {
+      
           for (int k=0; k<3; k++) {
             temps = strtok(tempc," ");
             temps = strtok(NULL," ");
@@ -518,13 +495,10 @@ bool getTDDFT(string str, Molecule *mol) {
           for (int i=0; i<3; i++) temps=strtok(NULL," ");
           mol->oscstrength[root] = atof(temps.c_str());
           infile.getline(tempc,1000);
-        } else {
-          infile.getline(tempc,1000);
-          infile.getline(tempc,1000);
-        }
-
+      
         infile.getline(tempc,1000);
         temps = tempc;
+
         
         //get CI coeffs
         //nrpa is for RPA
@@ -546,8 +520,7 @@ bool getTDDFT(string str, Molecule *mol) {
           infile.getline(tempc,1000);
           temps=tempc;
         } //end CI coeffs
-   
-        } //end nroots
+      } //end nroots
     }//end tddft
   //return true;
   }
@@ -670,7 +643,6 @@ Molecule *parseComfile(ifstream &comfile) {
       //the ground state only the first column become 
       //populated with transition densities
       //We only need the lower triangle since the 
-
       getCharges(temps,nmol,&mol[i],icharges,mol[i].nstates);
     }
     //symmetrize charges
@@ -697,7 +669,6 @@ Molecule *parseComfile(ifstream &comfile) {
     //retrieves nroots and respective energies and
     //transition dipoles for all 
     //excited states in given log file
-
     getTDDFT(temps,&mol[i]);
 
     cout<<"The transition dipole vector for S1 of molecule "<<i+1<<

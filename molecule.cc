@@ -2,6 +2,7 @@
 
 Molecule::Molecule()
 {
+  this->spinstate = 0;
   this->dip = new double[3];
   this->idip = new double[3];
 }

@@ -13,6 +13,7 @@ using namespace std;
 
 class Molecule {
   public:
+  int spinstate; //spin state, 0=singlet, 1=triplet
   int interaction; //type of interaction (Forster/3-body)
   double groundenergy; //ground state energy in a.u.
   double mass; //molecular mass

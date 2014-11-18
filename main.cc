@@ -47,10 +47,17 @@ int main(int argc, char **argv) {
   }
 
   /** min, max, nsteps **/
-  mol[1].grid[2].setParams(3., 4., 1);
-  //mol[0].grid[2].setParams(10., 12., 200);
-  if (mol[0].interaction > 1)
-    mol[2].grid[2].setParams(-3., -4., 1);
+  mol[1].grid[0].setParams(-4., -4., 1);
+  //mol[1].grid[1].setParams(3.,3.,1);
+  //mol[1].grid[2].setParams(3.,3.,1);
+  //mol[1].rotateTheta(M_PI/4,1);
+  if (mol[0].interaction > 1) {
+    mol[2].grid[0].setParams(4., 12., 100);
+    //mol[2].grid[1].setParams(-3.,-3.,1);
+    //mol[2].grid[2].setParams(4.,12.,100);
+    //mol[2].rotateTheta(-1*M_PI/4,1);
+  }
+
 
 /*****************  Setting up Molecular distribution ******************/
   /** Calculate transition dipole from charges **/
@@ -82,11 +89,11 @@ int main(int argc, char **argv) {
       for (int k=0; k<2; k++) {
         int index = i+j*2+k*4;
         energies[index] = (mol[0].excenergy[i] )//- mol[0].groundenergy)
-                            + (mol[1].excenergy[j])*0.5// - mol[1].groundenergy)
-                            + (mol[2].excenergy[k])*0.5;// - mol[2].groundenergy);
+                            + (mol[1].excenergy[j])// - mol[1].groundenergy)
+                            + (mol[2].excenergy[k]);// - mol[2].groundenergy);
         energies[index] *= 27.211396;
 cout<<"energies "<<index<<" "<<energies[index]<<endl;
-        //coul.int3[index+index*8] += energies[index];
+        coul.int3[index+index*8] += energies[index];
     //    cout<<index<<" energy index "<<coul.int3[index+index*8]<<endl;
       }
   /** Filter Coulomb Matrix for energy conservation **/
@@ -95,8 +102,10 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
   
   for (int i=0; i<8; i++) {
     for (int j=0; j<8; j++) {
+      if (i!=j)
+      coul.int3[i+j*8] *= 10.;
       //int3[i+j*8] = coul.int3[i+j*8];
-      //coul.int3[i+j*8] *= window(energies[i],energies[j],2,0);
+      //coul.int3[i+j*8] *= window(energies[i],energies[j],1.5,0);
       //cout<<i<<" "<<j<<" "<<window(energies[i],energies[j],2,0)<<"   window"<<endl;
 
     }
@@ -133,15 +142,15 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
   }
 */
   /** Check if evects are orthogonal **/
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,
               coul.evecs3,8,coul.int3,8,0,temp2,8);
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,8,8,8,1.,
-              temp2,8,coul.evecs3,8,0,temp,8);
+              coul.evecs3,8,coul.evecs3,8,0,temp,8);
 
 
   for (int i=0; i<8; i++) {
     for (int j=0; j<8; j++) {
-      //cout<<i<<" "<<j<<" "<<temp[i+j*8]<<endl;
+      cout<<i<<" "<<j<<" diagonal? "<<temp[i+j*8]<<endl;
       //coul.dint3[i+j*8] = temp[i+j*8];
     }
   }
@@ -150,7 +159,7 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
   //coul.diagonalize(coul.n2d,coul.evecs2,coul.evals2,coul.int2);
   for (int i=0; i<8; i++) {
     for (int j=0; j<8; j++) {
-      cout<<i<<" "<<j<<" "<<coul.evecs3[i+j*8]<<endl;
+      //cout<<i<<" "<<j<<" "<<coul.evecs3[i+j*8]<<endl;
     }
   }
 //  exit(0);
@@ -206,8 +215,41 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
     case 2:
       double dum;
       //pertCalcDegen(mol,coul,energies,int3,dum);
-      pertCalcNonDegen(mol,coul,energies,int3,dum);
       //pertCalc(mol,coul,intham,energies);
+      gsl_matrix_view m = gsl_matrix_view_array(int3,8,8);
+      gsl_vector *eval = gsl_vector_alloc(8);
+      gsl_matrix *evec = gsl_matrix_alloc(8,8);
+      gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(8);
+      gsl_eigen_symmv(&m.matrix,eval,evec,w);
+
+
+      for (int zi=0; zi<mol[2].grid[0].ngrid; zi++) {
+        print.appendData2d(outfile2,mol[2].grid[0].min+zi*mol[2].grid[0].dgrid,dum);
+        //pertCalcNonDegen(mol,coul,energies,int3,&dum);
+        pertCalcDegen(mol,coul,energies,int3,dum);
+        mol[2].translate(0,mol[2].grid[0].dgrid);
+        
+        createCoulomb3(mol,coul);
+        createCoulomb3(mol,int3);
+        m = gsl_matrix_view_array(int3,8,8);
+        w = gsl_eigen_symmv_alloc(8);
+        gsl_eigen_symmv(&m.matrix,eval,evec,w);
+
+        double vec[8],vec2[8];
+        for (int i=0; i<8; i++) {vec[i] = gsl_matrix_get(evec,i,0);}
+        double sum = 0.;
+        for (int i=0; i<8; i++) {
+          sum = 0.;
+          coul.evals3[i] = gsl_vector_get(eval,i);
+          //cout<<"evals "<<i<<" "<<coul.evals3[i]<<endl;
+          for (int j=0; j<8; j++) {
+            sum += coul.int3[i+j*8]*vec[j];
+            coul.evecs3[i+j*8] = gsl_matrix_get(evec,i,j);
+            cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*8]<<endl;
+          }
+        }
+      }
+      gsl_eigen_symmv_free(w);
       break;
     }
   return 0;

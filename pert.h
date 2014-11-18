@@ -17,13 +17,15 @@ using namespace std;
 
 /** Perturbation Calculation in eigenbasis of the 3-bit 
  * Coulomb operator **/
-void pertCalcNonDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double dum) {
+void pertCalcNonDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum) {
   cout<<" *** in pertCalc, using constant energy differences *** "<<endl;
   
   /** Scale Coulomb interaction NB: Fix this! **/
   for (int i=0; i<8; i++) { //initial state
+    coul.int3[i+i*8] -= energies[i];
     for (int j=0; j<8; j++) { //final state
-      coul.int3[i+j*8] *= 10.;
+      if (i!=j)
+      coul.int3[i+j*8] /= 1.;
     }
   }
   double res[64];
@@ -38,49 +40,60 @@ void pertCalcNonDegen(Molecule *mol, Coulomb coul, double *energies,double *int3
         if (energies[i] != energies[k])
           sum += coul.int3[i+k*8]*coul.int3[k+j*8]/(energies[i]-energies[k]);
         else //CTC This is an appoximation!
-          sum += coul.int3[i+k*8]*coul.int3[k+j*8]/1;//(energies[i]-energies[k]);
-          if (i==1 && j==6) 
-            cout<<"<1|V|"<<k<<"><"<<k<<"|V|6> = "<<sum<<" "<<coul.int3[k+j*8]<<" "<<coul.int3[i+k*8]<<endl;
-      }
+          sum += coul.int3[i+k*8]*coul.int3[k+j*8]/5;//(energies[i]-energies[k]);
+          
+          //Pring coupling elements
+          if (i==3 && j==5) {
+            cout<<"<"<<i<<"|V|"<<k<<"><"<<k<<"|V|"<<j<<"> = "
+            <<sum<<" "<<coul.int3[i+k*8]<<" "<<coul.int3[k+j*8]<<endl;
+          }
+        } //end intermediate state
       res[i+j*8] = sum*window(energies[i],energies[j],1,0);
-    }
-  }
+    } //end final state
+  } //end initial state
  for (int i=0; i<8; i++)
    for (int j=0; j<8; j++) {
-      cout<<i<<" "<<j<<" "<<res[i+j*8]
-      <<" <--interaction, coulomb --> "
-      <<coul.int3[i+j*8]<<endl;
+      cout<<i<<" "<<j<<" "<<res[i+j*8]<<"    <"<<i<<"|V|"<<j<<"> = "<<coul.int3[i+j*8]<<endl;
   }
 }
-void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double dum) {
-  cout<<" *** in pertCalc, using constant energy differences *** "<<endl;
+
+void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum) {
+  cout<<" *** in pertCalc*** "<<endl;
   
   /** Scale Coulomb interaction NB: Fix this! **/
   for (int i=0; i<8; i++) { //initial state
+    //coul.int3[i+i*8] += energies[i];
     for (int j=0; j<8; j++) { //final state
-      coul.int3[i+j*8] *= 10.;
+    //if (i!=j)
+      //coul.int3[i+j*8] *= 10.;
     }
   }
   double res[64];
   
   //Make diagonal hamiltonian with exciton energies on the diagonal
   double ham[64],tildeint[64];
+  for (int i=0; i<64; i++) ham[i] = 0.;
   for (int i=0; i<8; i++) {
     ham[i+i*8] = energies[i];
   }
 
   //Make C.ham.C^T
   double ham2[64],tempm[64],tempm2[64];
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,
               coul.evecs3,8,ham,8,0,tempm,8);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,8,8,8,1.,
-              tempm,8,coul.evecs3,8,0,ham2,8);
-  //Make V.V
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
-              coul.int3,8,coul.int3,8,0,tempm,8);
+              tempm,8,coul.evecs3,8,0,ham2,8);
+  //Make C.V.C^T
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,
+              coul.evecs3,8,coul.int3,8,0,tempm,8);
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
+              tempm,8,coul.evecs3,8,0,tildeint,8);
+
+
   double sum = 0.;
   
   for (int i=0; i<8; i++) {
+    //coul.evals3[i] *= 27.211396;
     for (int j=0; j<8; j++) {
       sum = 0.;
       for (int k=0; k<8; k++) {
@@ -97,39 +110,51 @@ void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
     for (int j=0; j<8; j++) { //final state
       numerator = 0.;
       denominator = 0.;
-    /*  for (int k=0; k<8; k++) { //intermediate state
+      for (int k=0; k<8; k++) { //intermediate state
         double sum1 = 0.;
         double sum2 = 0.;
         double sum3 = 0.;
         double sum4 = 0.;
         if (i==k) continue;
         for (int a=0; a<8; a++) {
-          for (int b=0; b<8; b++) {
-            if (a!=b) continue;
-            sum1 += coul.evecs3[i+a*8]*coul.evecs3[b+k*8]*coul.int3[a+b*8];//[b+a*8];
-          }
+          //for (int b=0; b<8; b++) {
+            //if (a!=b) continue;
+            //sum1 += coul.evecs3[i+a*8]*coul.evecs3[b+k*8]*tildeint[a+b*8];
+            sum1 += coul.evecs3[i+a*8]*coul.evecs3[k+a*8]*coul.evals3[a];
+          //}
         }
         for (int g=0; g<8; g++) {
-          for (int d=0; d<8; d++) {
-            if (g!=d) continue;
-            sum2 += coul.evecs3[k+g*8]*coul.evecs3[d+j*8]*coul.int3[g+d*8];//tildeint[g+d*8];     
-          }
+          //for (int d=0; d<8; d++) {
+            //if (g!=d) continue;
+            //sum2 += coul.evecs3[k+g*8]*coul.evecs3[d+j*8]*tildeint[g+d*8];     
+            sum2 += coul.evecs3[k+g*8]*coul.evecs3[j+g*8]*coul.evals3[g];
+          //}
         }
-        numerator += sum1*sum2;
+
         for (int a=0; a<8; a++) {
           for (int b=0; b<8; b++) {
-            sum3 += coul.evecs3[i+a*8]*coul.evecs3[b+i*8]*ham2[a+b*8];
+            sum3 += coul.evecs3[i+a*8]*coul.evecs3[i+b*8]*ham2[a+b*8];
           }
         }
         for (int a=0; a<8; a++) {
           for (int b=0; b<8; b++) {
-            sum4 += coul.evecs3[k+a*8]*coul.evecs3[b+k*8]*ham2[a+b*8];
+            sum4 += coul.evecs3[k+a*8]*coul.evecs3[k+b*8]*ham2[a+b*8];
           }
         }
-        denominator += sum3-sum4;//coul.evals3[i] - coul.evals3[k];//sum3-sum4;
-      }
-      */
-      res[i+j*8] = tempm[i+j*8];//*window(energies[i],energies[j],1,0);//numerator/(denominator );
+        
+        //numerator += coul.int3[i+k*8]*coul.int3[k+j*8]/(coul.evals3[i]-coul.evals3[k]); 
+        
+        numerator += sum1*sum2;//(coul.evals3[i]-coul.evals3[k]); //(sum3-sum4);
+        denominator +=sum3-sum4;// coul.evals3[i] - coul.evals3[k];//sum3-sum4;
+      //Pring coupling elements
+          if (i==1 && j==6) {
+            cout<<"<"<<i<<"|V|"<<k<<"><"<<k<<"|V|"<<j<<"> = "
+            <<numerator<<" "<<" "<<denominator<<" "<<tildeint[i+k*8]<<" "<<tildeint[k+j*8]<<endl;
+          }
+        }
+      
+
+      res[i+j*8] = numerator/denominator;
     }
   }
   cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,
@@ -137,7 +162,9 @@ void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
               tempm,8,coul.evecs3,8,0,tildeint,8);
  for (int i=0; i<8; i++)
-   for (int j=0; j<8; j++) cout<<i<<" "<<j<<" "<<res[i+j*8]<<" "<<tildeint[i+j*8]<<" "<<coul.int3[i+j*8]<<endl;
+   for (int j=0; j<8; j++) cout<<i<<"   "<<j<<"   "<<res[i+j*8]<<"   "
+      <<tildeint[i+j*8]*window(energies[i],energies[j],1,0)<<"       <"<<i<<"|V|"<<j<<"> = "<<coul.int3[i+j*8]<<endl;
+  dum = tildeint[1+6*8];
 }
 
 void pertCalc(Molecule *mol, Coulomb coul,double *intham,double *energies) {
