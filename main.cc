@@ -47,15 +47,19 @@ int main(int argc, char **argv) {
   }
 
   /** min, max, nsteps **/
-  mol[1].grid[0].setParams(4., 12., 100);
-  //mol[1].grid[1].setParams(3.,3.,1);
-  //mol[1].grid[2].setParams(4.,12.,100);
-  //mol[1].rotateTheta(M_PI/4,1);
+  //mol[0].rotateTheta(M_PI/2,1);
+  //mol[0].grid[0].setParams(-3.,-3.,1);
+
+  mol[1].grid[0].setParams(3., 3., 1);
+  //mol[1].grid[1].setParams(1.,1.,1);
+  //mol[1].grid[2].setParams(3.,3.,1);
+  //mol[1].rotateTheta(-1*M_PI/2,1);
   if (mol[0].interaction > 1) {
-    mol[2].grid[0].setParams(-4., -12., 100);
-    //mol[2].grid[1].setParams(-3.,-3.,1);
-    //mol[2].grid[2].setParams(4.,12.,100);
-    //mol[2].rotateTheta(-1*M_PI/4,1);
+    mol[2].grid[0].setParams(-3., -3., 1);
+    //mol[2].grid[1].setParams(-1.,-1.,1);
+    //mol[2].grid[2].setParams(5.,5.,1);
+    //mol[2].rotateTheta(1*M_PI/2,1);
+    //mol[2].rotateTheta(M_PI,0);
   }
 
 
@@ -63,22 +67,33 @@ int main(int argc, char **argv) {
   /** Calculate transition dipole from charges **/
   /** This also sets the transition vector elements **/
   for (int i=0; i<mol[0].nmol; i++) {
-    calcdip(mol[i]);
+ //   calcdip(mol[i]);
     mol[i].setPostoInit();
   }
 
-  //Rotate Molecules if necessary to align mainly in the XY plane
-//  for (int i=0; i<mol[0].nmol; i++)
-//    mol[i].rotateTheta(M_PI/2,1);
 
   //reset initial positions
   arrangeMol(mol);
   for (int i=0; i<mol[0].nmol; i++) {
-    mol[i].setCom();
-    mol[i].setPostoInit();
+//    mol[i].setCom();
+//    mol[i].setPostoInit();
   }
-  
-//CTC test start
+ 
+  /** Print initial positions **/
+  ofstream posout;
+  posout.open("initpos.dat");
+  for (int i=0; i<mol[0].nmol; i++) {
+    for (int j=0; j<mol[i].natoms; j++) {
+      for (int k=0; k<3; k++) {
+        posout<<mol[i].atoms[j].pos[k]<<" ";
+      }
+      posout<<endl;
+    }
+  }
+
+ 
+    
+  //CTC test start
   double temp[64],temp2[64],temp3[4],temp4[4],temp5[4];
   Coulomb coul;
   createCoulomb3(mol,coul);
@@ -93,8 +108,8 @@ int main(int argc, char **argv) {
                             + (mol[2].excenergy[k]);// - mol[2].groundenergy);
         energies[index] *= 27.211396;
 cout<<"energies "<<index<<" "<<energies[index]<<endl;
-        if (mol[0].interaction>1)
-          coul.int3[index+index*8] += energies[index];
+        //if (mol[0].interaction>1)
+          //coul.int3[index+index*8] += energies[index];
     //    cout<<index<<" energy index "<<coul.int3[index+index*8]<<endl;
       }
   /** Filter Coulomb Matrix for energy conservation **/
@@ -103,12 +118,12 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
   
   for (int i=0; i<8; i++) {
     for (int j=0; j<8; j++) {
-      if (i!=j)
+      if (i!=j) {
       coul.int3[i+j*8] *= 10.;
       //int3[i+j*8] = coul.int3[i+j*8];
-      //coul.int3[i+j*8] *= window(energies[i],energies[j],1.5,0);
+      coul.int3[i+j*8] *= window(energies[i],energies[j],0.4,0);
       //cout<<i<<" "<<j<<" "<<window(energies[i],energies[j],2,0)<<"   window"<<endl;
-
+      }
     }
   }
 
@@ -227,7 +242,9 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
 
       for (int zi=0; zi<mol[1].grid[whichaxis].ngrid; zi++) {
         //pertCalcNonDegen(mol,coul,energies,int3,&dum);
-        pertCalcDegen(mol,coul,energies,int3,dum);
+        pertCalcDegen(mol,coul,energies,int3,dum,intham);
+        propagateTime(mol,coul,energies,0,800,0.000001,intham);
+        exit(0);
         print.appendData2d(outfile2,mol[1].grid[whichaxis].min+zi*mol[1].grid[whichaxis].dgrid,dum);
         mol[1].translate(whichaxis,mol[1].grid[whichaxis].dgrid);
         

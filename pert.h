@@ -13,7 +13,140 @@
 #include "molecule.h"
 #include "coulomb.h"
 #include <iomanip>
+#include "gsl/gsl_eigen.h"
+#include "gsl/gsl_blas.h"
 using namespace std;
+
+double project(int mol, int state, const double *re, const double *im, const double *evecs) {
+  double res = 0;
+  double sum = 0.;
+  double vecre[8];
+  double vecim[8];
+
+  //convert psi to index-basis
+  cblas_dgemv(CblasColMajor,CblasNoTrans,8,8,1.,evecs,8,re,1,0.,vecre,1);
+  cblas_dgemv(CblasColMajor,CblasNoTrans,8,8,1.,evecs,8,im,1,0.,vecim,1);
+
+  for (int i=0; i<2; i++) {
+    for (int j=0; j<2; j++) {
+      int index;
+      if (mol == 0)
+        index = state+i*2+j*4;
+      else if (mol == 1)
+        index = i+state*2+j*4;
+      else if (mol == 2)
+        index  = i+j*2+state*4;
+      sum += vecre[index]*vecre[index] + vecim[index]*vecim[index];
+    }
+  }
+
+  return sum;
+}
+
+void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart, double tfinish,
+                  double dtt, double *intham) {
+  double *psire = new double[8];
+  double *psiim = new double[8];
+  double *dpsire = new double[8];
+  double *dpsiim = new double[8];
+  double ttime = tstart;
+
+  //construct full hamiltonian
+  double *ham, *diagham;
+  ham = new double[64];
+  diagham = new double[64];
+  for (int i=0; i<8; i++) {
+    ham[i+i*8] = energies[i]; //coul.int3 already has energies in it
+    for (int j=0; j<8; j++) {
+      ham[i+j*8] += intham[i+j*8] + coul.int3[i+j*8];
+      cout<<i<<" "<<j<<" hams "<<intham[i+j*8]<<" "<<coul.int3[i+j*8]<<" "<<ham[i+j*8]<<endl;
+    }
+  }
+
+  //diagonalize full hamiltonian
+  gsl_matrix_view m = gsl_matrix_view_array(ham,8,8);
+  gsl_vector *eval = gsl_vector_alloc(8);
+  gsl_matrix *evec = gsl_matrix_alloc(8,8);
+  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(8);
+  gsl_eigen_symmv(&m.matrix,eval,evec,w);
+  gsl_eigen_symmv_free(w);
+
+  //coul.diagonalize(8,coul.evecs3,coul.evals3,coul.int3);
+  double vec[8],vec2[8],evecs[64];
+  for (int i=0; i<8; i++) {
+    cout<<"Full evals "<<gsl_vector_get(eval,i)<<endl;
+  }
+  for (int i=0; i<8; i++) {
+    for (int j=0; j<8; j++) {
+      evecs[i+j*8] = gsl_matrix_get(evec,i,j);
+      cout<<"Full evecs "<<i<<" "<<j<<" "<<evecs[i+j*8]<<endl;
+    }
+  }
+  
+  //convert initial state to eigenbasis
+  for (int i=0; i<8; i++) {
+    psire[i] = 0.;
+    psiim[i] = 0.;
+  }
+  psire[1] = 1/sqrt(2);
+  psire[0] = 1/sqrt(2);
+  //psire[3] = 1;
+
+  double ham2[64],tempm[64],tempm2[64];
+  cblas_dgemv(CblasColMajor,CblasTrans,8,8,1.,evecs,8,psire,1,0.,dpsire,1);
+  cblas_dgemv(CblasColMajor,CblasTrans,8,8,1.,evecs,8,psiim,1,0.,dpsiim,1);
+  
+  //project onto selected state
+  int state = 0;
+  int site = 0;
+
+  double population = project(site,state,dpsire,dpsiim,evecs);
+  
+  ofstream outfile;
+  outfile.open("populations.dat");
+  outfile.precision(16);
+  
+  //propagate wavefunction in time
+  double initenergy = 0.;
+  double norm = 0.;
+  for (int i=0; i<8; i++) {
+    initenergy += energies[i]*(psire[i]*psire[i]+psiim[i]*psiim[i]);
+ }
+  
+  int counter = 1;
+  //Planck's constant in ev fs
+  double planck = 4.135667516;
+  
+  while (ttime < tfinish) {
+
+    for (int i=0; i<8; i++) {
+      double ev = gsl_vector_get(eval,i);
+      dpsire[i] = cos(ev*dtt/planck)*dpsire[i] + sin(ev*dtt/planck)*dpsiim[i];
+      dpsiim[i] = cos(ev*dtt/planck)*dpsiim[i] - sin(ev*dtt/planck)*dpsire[i];
+    }
+
+    if (counter%10000 == 0) {
+    population = project(0,1,dpsire,dpsiim,evecs);
+    cout<<"population of donor excited state = "<<population<<endl;
+    double energy = 0.;
+    norm = 0.;
+    for (int i=0; i<8; i++) {
+      energy += gsl_vector_get(eval,i)*(dpsire[i]*dpsire[i]+dpsiim[i]*dpsiim[i]);
+      norm += (dpsire[i]*dpsire[i]+dpsiim[i]*dpsiim[i]);
+    }
+
+    outfile<<ttime<<" "<<project(0,0,dpsire,dpsiim,evecs)
+      <<" "<<project(1,0,dpsire,dpsiim,evecs)
+      <<" "<<project(2,0,dpsire,dpsiim,evecs)
+      <<" "<<project(0,1,dpsire,dpsiim,evecs)
+      <<" "<<project(1,1,dpsire,dpsiim,evecs)
+      <<" "<<project(2,1,dpsire,dpsiim,evecs)
+      <<" "<<norm<<endl;
+    }
+    ttime += dtt;
+    counter ++;
+  }
+}
 
 /** Perturbation Calculation in eigenbasis of the 3-bit 
  * Coulomb operator **/
@@ -57,7 +190,7 @@ void pertCalcNonDegen(Molecule *mol, Coulomb coul, double *energies,double *int3
   }
 }
 
-void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum) {
+void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum,double *intham) {
   cout<<" *** in pertCalc*** "<<endl;
   
   /** Scale Coulomb interaction NB: Fix this! **/
@@ -147,8 +280,12 @@ void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
               tempm,8,coul.evecs3,8,0,tildeint,8);
  for (int i=0; i<8; i++)
-   for (int j=0; j<8; j++) cout<<i<<"   "<<j<<"   "<<res[i+j*8]<<"   "
+   for (int j=0; j<8; j++) {
+   cout<<i<<"   "<<j<<"   "<<res[i+j*8]<<"   "
       <<tildeint[i+j*8]*window(energies[i],energies[j],1,0)<<"       <"<<i<<"|V|"<<j<<"> = "<<coul.int3[i+j*8]<<endl;
+    
+    intham[i+j*8] = res[i+j*8]*window(energies[i],energies[j],0.4,0);
+  }
   dum = res[1+6*8];
 }
 

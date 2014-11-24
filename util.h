@@ -343,6 +343,7 @@ void getCharges(string filename, int nmol, Molecule *mol, int icharge, int nstat
     mol->atoms[j].pos[2] = atof(temps.c_str());
     mol->atoms[j].ipos[2] = atof(temps.c_str());
     temps = strtok(NULL," ");
+    cout<<"Atom pos "<<j<<" from "<<filename<<" "<<mol->atoms[j].pos[0]<<" "<<mol->atoms[j].pos[1]<<" "<<mol->atoms[j].pos[2]<<endl;
     //this should change if inter-excited transitions are to 
     //be included
     if (icharge < mol->nstates) { //diagonal terms (state densities)
