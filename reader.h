@@ -1,3 +1,5 @@
+#ifndef READER_H
+#define READER_H
 /****************************************************
  * The reader class parses an exciton .com file
  * and sets up the appropriate calculation
@@ -7,23 +9,91 @@
  *
  * **************************************************/
 
-class Reader() {
-public:
+#include <cstring>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <list>
+using namespace std;
 
-char* filename;
-
-string directiveList;
-/** Calculation Stack **/
-string type;
-double ewindow;
-int molecules;
-
-/** Molecule Stack **/
-int number;
-int nstates;
-int 
-
-/** Constructor and Destructor **/
-Reader() {};
-~Reader() {};
+/************************
+ * Data structures to
+ * store input settings
+ * *********************/
+struct ChargeFile {
+  int i,f;
+  string file;
 };
+
+struct Move {
+  string axis;
+  double min,max;
+  int steps;
+};
+
+struct Rot {
+  string axis;
+  double theta;
+};
+
+struct InitPop {
+  int mol, state;
+  double population;
+};
+
+struct Output {
+  int mol,state;
+  string file;
+};
+
+struct Calc{
+/** Calculation Stack **/
+  string type;
+  double ewindow;
+  int molecules;
+};
+
+struct Mol{
+  /** Molecule Stack **/
+  int number;
+  int nstates;
+  ChargeFile *cf;
+  Move *mv;
+  Rot *rot;
+  string tddftfile;
+};
+
+struct Dyn{
+  /** Dynamics Stack **/
+  double tstart,tfinish,increment;
+  int tsteps;
+  InitPop *pop;
+  Output *out;
+};
+
+struct Fret{
+};
+
+/*****************************
+ * Reader class definition
+ * **************************/
+class Reader {
+
+  public:
+  Calc calc;
+  Mol *mol;
+  Dyn dyn;
+  Fret fret;
+
+  char* filename;
+
+  /** Functions **/
+  void readBlock(string s, ifstream &in, int molcount);
+  void readSubBlock(string w,string s, ifstream &in,int molcount);
+  
+  /** Constructor and Destructor **/
+  Reader(string f);
+  ~Reader() {};
+};
+
+#endif

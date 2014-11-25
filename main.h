@@ -7,7 +7,7 @@
 #include <cstring>
 #include <stdlib.h>
 #include <math.h>
-#include <vector>
+#include <list>
 #include "util.h"
 #include "parse.h"
 #include "fret.h"
@@ -15,6 +15,7 @@
 #include "grid.h"
 #include "print.h"
 #include "coulomb.h"
+#include "reader.h"
 #include "gsl/gsl_blas.h"
 #include "gsl/gsl_eigen.h"
 using namespace std;

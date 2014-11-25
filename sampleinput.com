@@ -6,10 +6,10 @@ calculation
   molecules 3
 end
 
-molecule 0
+molecules
   states 2
   charges 
-    0 0 file.dat
+    1 0 file.dat
     0 1 file.dat
     1 1 file.dat
   end

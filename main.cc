@@ -14,6 +14,10 @@
 
 int main(int argc, char **argv) {
   
+  Reader read(argv[1]);
+  cout<<"done reading "<<read.mol[0].tddftfile<<endl;
+  exit(0);
+  
   //open input file
   comfile.open(argv[1]);
 
