@@ -22,6 +22,8 @@ int main(int argc, char **argv) {
    * this sets up the main Molecule object
    */
   mol = parseComfile(comfile);
+
+  /** Set COM **/
   for (int i=0; i<mol[0].nmol; i++) {
     mol[i].setCom();
   }
@@ -90,8 +92,6 @@ int main(int argc, char **argv) {
       posout<<endl;
     }
   }
-
- 
     
   //CTC test start
   double temp[64],temp2[64],temp3[4],temp4[4],temp5[4];

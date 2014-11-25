@@ -658,7 +658,7 @@ Molecule *parseComfile(ifstream &comfile) {
         for (int j=0; j<mol[i].natoms; j++) {
           //this should change if inter-excited transitions are to 
           //be included
-          mol[i].atoms[j].allocateCharges(mol[i].nstates*mol[i].nstates);// = new double[2*mol[i].nstates-1];
+          mol[i].atoms[j].allocateCharges(mol[i].nstates*mol[i].nstates);
         }
       }
       
@@ -673,6 +673,7 @@ Molecule *parseComfile(ifstream &comfile) {
 
       getCharges(temps,nmol,&mol[i],icharges,mol[i].nstates);
     }
+
     //symmetrize charges
     for (int iatom = 0; iatom<mol[i].natoms; iatom++) {
       for (int icharge = 0; icharge<mol[i].nstates; icharge++) {
