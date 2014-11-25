@@ -1,0 +1,58 @@
+This program will calculate exciton couplings through second order in the Coulomb interaction. Several steps must be taken to prepare the input files, beginning with DFT/TDDFT using NWChem 6.5 or greater. Use NWChem to find the excited states of interest and produce Gaussian-style cube files for each of the state and transition densities that will be involved in the exciton coupling calculation. The cube files must then be processed using the denstq program at github.com/chemicalcraig/denstq to produce the transition/state charges. Once the charges are calculated the input file for this program can be prepared.
+
+N.B. Lines beginning with a '#' are ignored
+
+Calculation 
+  This directive sets up some global parameters and tells the program what type of calculation to perform. The options are:
+  
+  type pert/fret
+    either a many-body perturbative or Forster calculation, respectively
+  
+  ewindow default 0.5
+    sets the energetic constraint on state couplings. States whose energy difference lie outside this window will be uncoupled.
+  molecules N
+    Tells the program how many molecules are in the system
+
+molecule (optional number)
+  This stack gives all of the information regarding a molecule's properties, and spatial orientation. 'number' is used for ordering. The default behavior is to order incrementally as the molecules are encountered, starting with 0.
+
+  states default 2
+    How many states (including ground state) are involved. For every excited state there should be one transition charge file containing the tq's for that particular excitation from the ground state. Future implementations may include interexcited state couplings. 
+
+  charges initial final filename
+    Indicates initial state, final state, and where to find the associated charges. As mentioned above, for every excited state there should be one transition charge file containing the charges associated with the excitation from the ground state. For FRET calculations only a transition file is necessary.
+
+  move axis, min, max, steps
+    Translates molecule from its initial position obtained from the charge file(s). Units are in Angstroms, and axes are Cartesian 'x', 'y', or 'z'.
+
+  rotate axis radians
+    Rotate the molecule about a particular axis. Use 'M_PI' for 3.14159.....
+
+  tddft filename
+    File where the program is to look for excited state information. Also obtained from this file are the molecular mass, (CTC what else?)
+
+Dynamics
+  The dynamics stack should contain parameters for propagating a vector in the energy basis. Default units are in fs. The user must specify three of the quantities, the fourth will be determined based on the others.
+    
+  start 
+    start time 
+  
+  finish 
+    finish time
+  
+  steps 
+    number of time steps
+  
+  increment
+    time step increment
+
+  initial molecule state population
+    specify the population of an electronic state of a particular molecule. The default is all molecules in their ground state.
+
+  output
+    populations (molecule, state)
+      print the population of a particular molecular state. Default is all populations of all molecules.
+    file filename
+      file to write output to
+  
+
