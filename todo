@@ -1,0 +1,30 @@
+11/25
+move initial coordinate transformations to input file
+change input to mirror NWChem, i.e.
+
+molecule
+  states 2
+  charges 
+    0 0 file.dat
+    0 1 file.dat
+    1 1 file.dat
+  end
+  move
+    x -3. -3. 1
+  end
+  rotate
+    x M_PI/2
+  end
+  tddft file.out
+end
+
+dynamics
+  start a
+  finish b
+  steps c
+  increment d
+  output file.dat
+end
+
+clean up pert.h
+clean up main.cc
