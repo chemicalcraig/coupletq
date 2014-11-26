@@ -27,7 +27,7 @@ dynamics
   finish b
   steps c
   increment d
-  initial
+  init
     0 1 1
   end
   output

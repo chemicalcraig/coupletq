@@ -16,11 +16,11 @@ const string dirs_[] = {"calculation","Calculation","CALCULATION",
 const string subdirs_[] = {"charges","Charges","CHARGES",
                          "move","Move","MOVE",
                          "rotate","Rotate","ROTATE",
-                         "initial","Initial","INITIAL",
+                         "init","Init","INIT",
                          "output","Output","OUTPUT"};
 const string opts_[] = {"type","ewindow","molecules","states","charges",
                            "move","rotate","tddft","start","finish","steps",
-                           "increment","populations","file"};
+                           "increment","init","output","populations","file"};
 list<string> directives_(dirs_, dirs_+sizeof(dirs_)/sizeof(string));
 list<string> subdirectives_(subdirs_, subdirs_+sizeof(subdirs_)/sizeof(string));
 list<string> options_(opts_, opts_+sizeof(opts_)/sizeof(string));
@@ -92,7 +92,7 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
     } //found the end
   } //end molecules block
 
-/** Molecules block **/
+/** Dynamics block **/
   if ((s1.compare(0,4,"dynamics",0,4) == 0) ||
       (s1.compare(0,4,"Dynamics",0,4) == 0) ||
       (s1.compare(0,4,"DYNAMICS",0,4) == 0)) {
@@ -108,6 +108,7 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
         /** Check for subdirective **/
         list<string>::iterator it2 = find(subdirectives_.begin(),subdirectives_.end(),*it);
         if (it2!=subdirectives_.end()) {
+          cout<<"it2 "<<*it2<<endl;
           readSubBlock(which,*it2,in,molcount);
         } else {
           s=strtok(NULL," ");
@@ -124,7 +125,7 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
         }
       }
     } //found the end
-  } //end molecules block
+  } //end dynamics block
 
 
 };
@@ -211,10 +212,9 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
 
 /** dynamics sub blocks **/
   if (which.compare(0,3,"dyn",0,3) == 0) {
-    cout<<"in the dynamics subblock "<<s1<<endl;
     int pos = in.tellg();
     /** initial **/
-    if (s1.compare(0,7,"initial",0,7) == 0) {
+    if (s1.compare(0,4,"init",0,4) == 0) {
       int n=-1;
       while(s.compare(0,3,"end",0,3)!=0) {
         in>>ws;
@@ -242,16 +242,30 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
       int n=-1;
       while(s.compare(0,3,"end",0,3)!=0) {
         in>>ws;
+        int pos2 = in.tellg();
         in.getline(c,1000);
         s=c;
+        pos=in.tellg(); 
+        char *c2 = c;
         if (s.compare(0,10,"populations",0,10)==0){
-          pos=in.tellg();         
-          s=strtok(c," ");
-          while(s!="\n") {
-            s=strtok(NULL," ");
+          char *cs;
+          cs=strtok(c2," ");
+          while(cs!=NULL) {
+            cs=strtok(NULL," ");
             n++;
           }
-          cout<<n<<" n "<<endl;
+          cout<<257<<" "<<c2<<" "<<c<<" "<<s<<endl;
+          c2 = s.c_str();
+          s=strtok(c2," ");
+          cout<<"s before "<<c2<<" "<<s<<" "<<n<<endl;
+          for (int i=0; i<n; i++) {
+            cout<<"ok "<<endl;
+            cout<<261<<" "<<s<<" "<<c<<endl;
+            s=strtok(NULL," ");
+            cout<<259<<" "<<s<<endl;
+          }
+          in.getline(c,1000);
+          s=strtok(c," ");
         } //end populations
       
       }
