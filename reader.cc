@@ -62,7 +62,7 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
     } //found the end
   } //end calculation block
   
-  /** Molecule block **/
+  /** Molecules block **/
   if ((s1.compare(0,4,"molecules",0,4) == 0) ||
       (s1.compare(0,4,"Molecules",0,4) == 0) ||
       (s1.compare(0,4,"MOLECULES",0,4) == 0)) {
@@ -90,8 +90,41 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
         }
       }
     } //found the end
-  } //end calculation block
+  } //end molecules block
 
+/** Molecules block **/
+  if ((s1.compare(0,4,"dynamics",0,4) == 0) ||
+      (s1.compare(0,4,"Dynamics",0,4) == 0) ||
+      (s1.compare(0,4,"DYNAMICS",0,4) == 0)) {
+      cout<<"in the dynamics block"<<endl;
+    while (s2.compare(0,3,"end",0,3) != 0) {
+      string which="dyn";
+      in>>ws;
+      in.getline(c,1000);
+      s2=c;
+      s=strtok(c," ");
+      list<string>::iterator it = find(options_.begin(),options_.end(),s);
+      if (it!=options_.end()) {
+        /** Check for subdirective **/
+        list<string>::iterator it2 = find(subdirectives_.begin(),subdirectives_.end(),*it);
+        if (it2!=subdirectives_.end()) {
+          readSubBlock(which,*it2,in,molcount);
+        } else {
+          s=strtok(NULL," ");
+          /** calc type **/
+          if (string(*it).compare(0,6,"start",0,6)==0) {
+            dyn.tstart = atof(s.c_str());
+          } else if (string(*it).compare(0,6,"finish",0,6)==0) {
+            dyn.tfinish = atof(s.c_str());
+          } else if (string(*it).compare(0,5,"steps",0,5)==0) {
+            dyn.tsteps = atoi(s.c_str());
+          } else if (string(*it).compare(0,9,"increment",0,9)==0) {
+            dyn.increment = atof(s.c_str());
+          }
+        }
+      }
+    } //found the end
+  } //end molecules block
 
 
 };
@@ -128,7 +161,7 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
     } //end charges
   
     /** move **/
-    if (s1.compare(0,7,"move",0,7) == 0) {
+    if (s1.compare(0,4,"move",0,4) == 0) {
       int n=-1;
       while(s.compare(0,3,"end",0,3)!=0) {
         in>>ws;
@@ -175,6 +208,92 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
       in.getline(c,1000);
     } //end rot
   } //end mol block
+
+/** dynamics sub blocks **/
+  if (which.compare(0,3,"dyn",0,3) == 0) {
+    cout<<"in the dynamics subblock "<<s1<<endl;
+    int pos = in.tellg();
+    /** initial **/
+    if (s1.compare(0,7,"initial",0,7) == 0) {
+      int n=-1;
+      while(s.compare(0,3,"end",0,3)!=0) {
+        in>>ws;
+        in.getline(c,1000);
+        s=c;
+        n++;
+      }
+      in.seekg(pos);
+      dyn.pop = new InitPop[n];
+      for (int i=0; i<n; i++) {
+        in>>ws;
+        in.getline(c,1000);
+        s=strtok(c," ");
+        dyn.pop[i].mol = atoi(s.c_str());
+        s=strtok(NULL," ");
+        dyn.pop[i].state = atoi(s.c_str());
+        s=strtok(NULL," ");
+        dyn.pop[i].population = atof(s.c_str());
+      }
+      in.getline(c,1000);
+    } //end initial population
+  
+    /** output **/
+    if (s1.compare(0,6,"output",0,6) == 0) {
+      int n=-1;
+      while(s.compare(0,3,"end",0,3)!=0) {
+        in>>ws;
+        in.getline(c,1000);
+        s=c;
+        if (s.compare(0,10,"populations",0,10)==0){
+          pos=in.tellg();         
+          s=strtok(c," ");
+          while(s!="\n") {
+            s=strtok(NULL," ");
+            n++;
+          }
+          cout<<n<<" n "<<endl;
+        } //end populations
+      
+      }
+      in.seekg(pos);
+      dyn.out = new Output[n];
+      for (int i=0; i<n; i++) {
+        in>>ws;
+        in.getline(c,1000);
+        s=strtok(c," ");
+        dyn.out[i].mol = atoi(s.c_str());
+        s=strtok(NULL," ");
+        mol[molcount].mv[i].max = atof(s.c_str());
+        s=strtok(NULL," ");
+        mol[molcount].mv[i].steps = atoi(s.c_str());
+      }
+      
+      in.getline(c,1000);
+    } //end output
+
+    /** rotate **/
+    if (s1.compare(0,6,"rotate",0,6) == 0) {
+      int n=-1;
+      while(s.compare(0,3,"end",0,3)!=0) {
+        in>>ws;
+        in.getline(c,1000);
+        s=c;
+        n++;
+      }
+      in.seekg(pos);
+      mol[molcount].rot = new Rot[n];
+      for (int i=0; i<n; i++) {
+        in>>ws;
+        in.getline(c,1000);
+        s=strtok(c," ");
+        mol[molcount].rot[i].axis = s;
+        s=strtok(NULL," ");
+        mol[molcount].rot[i].theta = atof(s.c_str());
+      }
+      in.getline(c,1000);
+    } //end rot
+  } //end mol block
+
 }
 
 /** read dynamics block **/
