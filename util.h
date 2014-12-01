@@ -302,58 +302,19 @@ void printStuff(Molecule *mol) {
   }
 }
 
-/* Get Natoms */
-int getNatoms(string filename, int nmol, Molecule *mol) {
-  ifstream infile;
-  infile.open(filename.c_str());
-  char tempc[1000];
-  infile.getline(tempc,1000);
-  string temps = strtok(tempc,": ");
-  temps = strtok(NULL,": ");
-  infile.close();
-
-  return atoi(temps.c_str());
-}
-
-/* Get the charges */
-void getCharges(string filename, int nmol, Molecule *mol, int icharge, int nstates) {
-  ifstream infile;
-  infile.open(filename.c_str());
-  char tempc[1000];
-  string temps;
-  
-  //skip natoms and energy on first two lines
-  getnlines(infile,tempc,2,1000);
-  
-  for (int j=0; j<mol->natoms; j++) {
-    infile.getline(tempc,1000);
-    temps = strtok(tempc," ");
-    temps = strtok(NULL," ");
-    mol->atoms[j].type = temps;
-    temps = strtok(NULL," ");
-    mol->atoms[j].x = atof(temps.c_str());
-    mol->atoms[j].pos[0] = atof(temps.c_str());
-    mol->atoms[j].ipos[0] = atof(temps.c_str());
-    temps = strtok(NULL," ");
-    mol->atoms[j].y = atof(temps.c_str());
-    mol->atoms[j].pos[1] = atof(temps.c_str());
-    mol->atoms[j].ipos[1] = atof(temps.c_str());
-    temps = strtok(NULL," ");
-    mol->atoms[j].z = atof(temps.c_str());
-    mol->atoms[j].pos[2] = atof(temps.c_str());
-    mol->atoms[j].ipos[2] = atof(temps.c_str());
-    temps = strtok(NULL," ");
-    cout<<"Atom pos "<<j<<" from "<<filename<<" "<<mol->atoms[j].pos[0]<<" "<<mol->atoms[j].pos[1]<<" "<<mol->atoms[j].pos[2]<<endl;
-    //this should change if inter-excited transitions are to 
-    //be included
-    if (icharge < mol->nstates) { //diagonal terms (state densities)
-      mol->atoms[j].charges[icharge+icharge*mol->nstates] = atof(temps.c_str());
-
-    } else {
-      mol->atoms[j].charges[icharge] = atof(temps.c_str());
-    }
+/*
+int *indicesFromIndex(const int ind, Molecule *mol) {
+  int prod = 0;
+  int *a;
+  for (int i=0; i<mol[0].nmol; i++) {
+    prod *= mol[i].nstates;
+  }
+  a=new int[prod];
+  for (int i=0; i<prod; i++) {
+       
   }
 }
+*/
 
 int findCol(int x, const int rowrange, const int colrange) {
   for (int i=0; i<rowrange; i++) 
@@ -367,6 +328,73 @@ int findRow(int x, const int rowrange, const int colrange) {
     for (int j=0; j<colrange; j++)
       if ((i+j*rowrange) == x)
         return i;
+}
+
+/** indices from index, hard-coded for now **/
+int *indicesFromIndex(const int ind, Molecule *mol) {
+  int *a;
+  a=new int[mol[0].nmol];
+  
+  switch(mol[0].nmol) {
+    case 2:
+      for (int i=0; i<mol[0].nstates; i++)
+        for (int j=0; j<mol[1].nstates; j++) {
+          int x = i+j*mol[0].nstates;
+          if (x == ind) {
+            a[0] = i;
+            a[1] = j;
+            return a;
+          }
+        }
+      break;
+    case 3:
+      for (int i=0; i<mol[0].nstates; i++)
+        for (int j=0; j<mol[1].nstates; j++) 
+          for (int k=0; k<mol[2].nstates; k++) {
+            int x = i+j*mol[0].nstates+k*mol[0].nstates*mol[1].nstates;
+            if (x == ind) {
+              a[0] = i;
+              a[1] = j;
+              a[2] = k;
+              return a;
+            }
+          }
+      break;
+    case 4:
+      for (int i=0; i<mol[0].nstates; i++)
+        for (int j=0; j<mol[1].nstates; j++) 
+          for (int k=0; k<mol[2].nstates; k++) 
+            for (int l=0; l<mol[3].nstates; l++) {
+              int x = i + j*mol[0].nstates + k*mol[0].nstates*mol[1].nstates + l*mol[0].nstates*mol[1].nstates*mol[2].nstates;
+              if (x == ind) {
+                a[0] = i;
+                a[1] = j;
+                a[2] = k;
+                a[3] = l;
+                return a;
+              }
+          }
+      break;
+    case 5:
+      for (int i=0; i<mol[0].nstates; i++)
+        for (int j=0; j<mol[1].nstates; j++) 
+          for (int k=0; k<mol[2].nstates; k++) 
+            for (int l=0; l<mol[3].nstates; l++) 
+              for (int m=0; m<mol[4].nstates; m++) {
+                int x = i + j*mol[0].nstates + k*mol[0].nstates*mol[1].nstates 
+                    + l*mol[0].nstates*mol[1].nstates*mol[2].nstates
+                    + m*mol[0].nstates*mol[1].nstates*mol[2].nstates*mol[3].nstates;
+                if (x == ind) {
+                  a[0] = i;
+                  a[1] = j;
+                  a[2] = k;
+                  a[3] = l;
+                  a[4] = m;
+                  return a;
+                }
+              }
+      break;
+  }
 }
 
 #endif // UTIL_H

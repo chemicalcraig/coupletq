@@ -9,9 +9,9 @@ end
 molecules
   states 2
   charges 
-    1 0 file.dat
-    0 1 file.dat
-    1 1 file.dat
+    1 0 densoutput-s10.dat
+    0 0 densoutput-s0.dat
+    1 1 densoutput-s1.dat
   end
   move
     x -3. -3. 1
@@ -19,7 +19,23 @@ molecules
   rotate
     x M_PI/2
   end
-  tddft file.out
+  tddft pmimeth.out
+end
+
+molecules
+  states 2
+  charges 
+    1 0 densoutput-s10.dat
+    0 0 densoutput-s0.dat
+    1 1 densoutput-s1.dat
+  end
+  move
+    x -3. -3. 1
+  end
+  rotate
+    x M_PI/2
+  end
+  tddft pmimeth.out
 end
 
 dynamics
@@ -31,7 +47,7 @@ dynamics
     0 1 1
   end
   output
-    populations (0,0) (1,1)
+    populations (0,1) (2,3)
     file file.dat
   end
 end

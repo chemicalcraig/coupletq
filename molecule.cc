@@ -1,4 +1,81 @@
 #include "molecule.h"
+#include "molutil.h"
+
+/****************************************
+ * Set initial geometric configuration
+ * **************************************/
+void Molecule::setInit(Reader r, int i) {
+  int ta,ra;
+
+    /** Translations **/
+    for (int j=0; j<r.mol[i].nmov; j++) {
+      if (r.mol[i].mv[j].axis.compare(0,1,"x",0,1)==0) {
+        ta = 0;
+      } else if (r.mol[i].mv[j].axis.compare(0,1,"y",0,1)==0) {
+        ta = 1;
+      } else if (r.mol[i].mv[j].axis.compare(0,1,"z",0,1)==0) {
+        ta = 2;
+      }
+      
+      this->grid[ta].setParams(r.mol[i].mv[j].min,r.mol[i].mv[j].max,r.mol[i].mv[j].steps);
+    } //end translations
+     
+     /** Rotations **/
+    for (int j=0; j<r.mol[i].nrot; j++) {
+    cout<<"rotating"<<endl;
+      if (r.mol[i].rot[j].axis.compare(0,1,"x",0,1)==0) {
+        ra = 0;
+      } else if (r.mol[i].rot[j].axis.compare(0,1,"y",0,1)==0) {
+        ra = 1;
+      } else if (r.mol[i].rot[j].axis.compare(0,1,"z",0,1)==0) {
+        ra = 2;
+      }
+      this->rotateTheta(r.mol[i].rot[j].theta,ra);
+    } //end rotations
+}
+
+/****************************************
+ * Initialize the Molecule Object
+ * *************************************/
+Molecule *initialize(Reader r) {
+  
+  /** Declare Molecule **/
+  Molecule * mol = new Molecule[r.calc.molecules];
+  
+  /** Get number of atoms and densities **/
+  for (int i=0; i<r.calc.molecules; i++) {
+    mol[i].nstates = r.mol[i].nstates;
+    mol[i].nmol = r.calc.molecules;
+    mol[i].natoms = getNatoms(r.mol[i].cf[0].file,r.calc.molecules,mol);
+    mol[i].atoms = new Atom[mol[i].natoms];
+        cout<<"Molecule "<<i+1<<" has "<<mol[i].natoms<<" atoms"<<endl;
+    //Allocate atoms and all of their densities
+    //We use lower triangular form for the couplings
+    for (int j=0; j<mol[i].natoms; j++) {
+      mol[i].atoms[j].allocateCharges(r.mol[i].nstates*r.mol[i].nstates);
+    }
+    /** Get the transition charges **/
+    for (int j=0; j<r.mol[i].ncharges; j++) {
+      getCharges(r.mol[i].cf[j].file,&mol[i],
+                r.mol[i].nstates,r.mol[i].cf[j].i,
+                r.mol[i].cf[j].f);
+    } //end tq retrieval
+  
+    /** Get Excitation energies from TDDFT calc **/
+    getTDDFT(r.mol[i].tddftfile,&mol[i]);
+  }
+
+  /** Set Molecular Mass **/
+  for (int i=0; i<r.calc.molecules; i++) {
+    double mass = 0.;
+    for (int j=0; j<mol[i].natoms; j++) {
+      mass += mol[i].atoms[j].mass;
+    }
+    mol[i].setMass(mass);
+  }
+    
+  return mol;
+}
 
 Molecule::Molecule()
 {
@@ -73,6 +150,10 @@ void Molecule::rotateTheta(double theta, int axis) {
   
   double sum = 0.;
   double pos[3],pos2[3],pos3[3];
+
+  for (int i=0; i<3; i++)
+    for (int j=0; j<3; j++)
+      this->rot[i+j*3] = 0.;
 
   switch(axis) {
     //rotate about x-axis
@@ -185,8 +266,8 @@ void Molecule::setCom() {
   double sum[3];
   for (int i=0; i<3; i++) {
     sum[i] = 0.;
-    for (int j=0; j<this->natoms; j++) {
-      sum[i] += this->atoms[j].pos[i] * this->atoms[j].mass;
+    for (int j=0; j<natoms; j++) {
+      sum[i] += atoms[j].pos[i] * atoms[j].mass;
     }
     sum[i] /= this->mass;
     this->com[i] = sum[i];

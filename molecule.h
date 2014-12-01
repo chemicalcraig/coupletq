@@ -3,13 +3,14 @@
 
 #include "atom.h"
 #include "grid.h"
+#include "reader.h"
 #include "gsl/gsl_blas.h"
 #include <iostream>
 #include <cstdio>
 #include <math.h>
 #include <fstream>
 
-using namespace std;
+using namespace std; 
 
 class Molecule {
   public:
@@ -81,11 +82,16 @@ class Molecule {
   void setAtomicMasses(string t, string m);
   void setMass(double m);
 
+  void setInit(Reader r, int i);
+  
   /*********************************************
    * Operators
    */
   Molecule operator= (const Molecule& m);
 
 };
-
+/** Initialize Molecule using parameters
+   * from com file **/
+  Molecule *initialize(Reader r);
+ 
 #endif // MOLECULE_H

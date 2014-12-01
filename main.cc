@@ -14,21 +14,21 @@
 
 int main(int argc, char **argv) {
   
+  /** Read input com file **/
   Reader read(argv[1]);
-  cout<<"done reading "<<read.mol[0].tddftfile<<endl;
-  exit(0);
-  
+  mol = initialize(read);
+
   //open input file
-  comfile.open(argv[1]);
+//  comfile.open(argv[1]);
 
   /*
    * Parse input comfile and retrieve necessary data
    * this sets up the main Molecule object
    */
-  mol = parseComfile(comfile);
+//  mol = parseComfile(comfile);
 
   /** Set COM **/
-  for (int i=0; i<mol[0].nmol; i++) {
+  for (int i=0; i<read.calc.molecules; i++) {
     mol[i].setCom();
   }
   
@@ -37,42 +37,44 @@ int main(int argc, char **argv) {
   ofstream outfile2,pdafile;
   remove(mol[0].outputfilename.c_str());
   outfile2.open(mol[0].outputfilename.c_str(), std::ofstream::out | std::ofstream::app);
-  //remove("pda.dat");
-  //pdafile.open("pda.dat", std::ofstream::out | std::ofstream::app);
   outfile2.precision(16);
-  pdafile.precision(16);
 
   /** Set up the grid data **/
   int griddim = 3;
-  for (int i=0; i<mol[0].nmol; i++) {
+  for (int i=0; i<read.calc.molecules; i++) {
     mol[i].grid = new Grid[griddim];
     mol[i].griddim = griddim;
     for (int j=0; j<griddim; j++) {
       mol[i].grid[j].size = griddim;
     }
   }
-
+  
+  /** Set up initial conformations **/
+  for (int i=0; i<read.calc.molecules; i++) {
+    mol[i].setInit(read,i);
+  }
+  
   /** min, max, nsteps **/
   //mol[0].rotateTheta(M_PI/2,1);
   //mol[0].grid[0].setParams(-3.,-3.,1);
 
-  mol[1].grid[0].setParams(3., 3., 1);
+//  mol[1].grid[0].setParams(3., 3., 1);
   //mol[1].grid[1].setParams(1.,1.,1);
   //mol[1].grid[2].setParams(3.,3.,1);
   //mol[1].rotateTheta(-1*M_PI/2,1);
-  if (mol[0].interaction > 1) {
-    mol[2].grid[0].setParams(-3., -3., 1);
+//  if (mol[0].interaction > 1) {
+//    mol[2].grid[0].setParams(-3., -3., 1);
     //mol[2].grid[1].setParams(-1.,-1.,1);
     //mol[2].grid[2].setParams(5.,5.,1);
     //mol[2].rotateTheta(1*M_PI/2,1);
     //mol[2].rotateTheta(M_PI,0);
-  }
+//  }
 
 
 /*****************  Setting up Molecular distribution ******************/
   /** Calculate transition dipole from charges **/
   /** This also sets the transition vector elements **/
-  for (int i=0; i<mol[0].nmol; i++) {
+  for (int i=0; i<read.calc.molecules; i++) {
  //   calcdip(mol[i]);
     mol[i].setPostoInit();
   }
@@ -80,7 +82,7 @@ int main(int argc, char **argv) {
 
   //reset initial positions
   arrangeMol(mol);
-  for (int i=0; i<mol[0].nmol; i++) {
+  for (int i=0; i<read.calc.molecules; i++) {
 //    mol[i].setCom();
 //    mol[i].setPostoInit();
   }
@@ -88,7 +90,7 @@ int main(int argc, char **argv) {
   /** Print initial positions **/
   ofstream posout;
   posout.open("initpos.dat");
-  for (int i=0; i<mol[0].nmol; i++) {
+  for (int i=0; i<read.calc.molecules; i++) {
     for (int j=0; j<mol[i].natoms; j++) {
       for (int k=0; k<3; k++) {
         posout<<mol[i].atoms[j].pos[k]<<" ";
@@ -96,7 +98,7 @@ int main(int argc, char **argv) {
       posout<<endl;
     }
   }
-    
+exit(0);    
   //CTC test start
   double temp[64],temp2[64],temp3[4],temp4[4],temp5[4];
   Coulomb coul;

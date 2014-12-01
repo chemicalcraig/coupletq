@@ -66,7 +66,8 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
   if ((s1.compare(0,4,"molecules",0,4) == 0) ||
       (s1.compare(0,4,"Molecules",0,4) == 0) ||
       (s1.compare(0,4,"MOLECULES",0,4) == 0)) {
-      cout<<"in the molecule block"<<endl;
+    mol[molcount].nmov = 0;
+    mol[molcount].nrot = 0;
     while (s2.compare(0,3,"end",0,3) != 0) {
       string which="mol";
       in>>ws;
@@ -96,7 +97,6 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
   if ((s1.compare(0,4,"dynamics",0,4) == 0) ||
       (s1.compare(0,4,"Dynamics",0,4) == 0) ||
       (s1.compare(0,4,"DYNAMICS",0,4) == 0)) {
-      cout<<"in the dynamics block"<<endl;
     while (s2.compare(0,3,"end",0,3) != 0) {
       string which="dyn";
       in>>ws;
@@ -108,7 +108,6 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
         /** Check for subdirective **/
         list<string>::iterator it2 = find(subdirectives_.begin(),subdirectives_.end(),*it);
         if (it2!=subdirectives_.end()) {
-          cout<<"it2 "<<*it2<<endl;
           readSubBlock(which,*it2,in,molcount);
         } else {
           s=strtok(NULL," ");
@@ -148,6 +147,7 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
       }
       in.seekg(pos);
       mol[molcount].cf = new ChargeFile[n];
+      mol[molcount].ncharges = n;
       for (int i=0; i<n; i++) {
         in>>ws;
         in.getline(c,1000);
@@ -172,6 +172,7 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
       }
       in.seekg(pos);
       mol[molcount].mv = new Move[n];
+      mol[molcount].nmov = n;
       for (int i=0; i<n; i++) {
         in>>ws;
         in.getline(c,1000);
@@ -198,6 +199,8 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
       }
       in.seekg(pos);
       mol[molcount].rot = new Rot[n];
+      mol[molcount].nrot = n;
+      
       for (int i=0; i<n; i++) {
         in>>ws;
         in.getline(c,1000);
@@ -254,60 +257,23 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
             cs=strtok(NULL," ");
             n++;
           }
-          cout<<257<<" "<<c2<<" "<<c<<" "<<s<<endl;
+          dyn.out = new Output[n];
           c2 = s.c_str();
           s=strtok(c2," ");
-          cout<<"s before "<<c2<<" "<<s<<" "<<n<<endl;
+          //s=strtok(NULL," ");
           for (int i=0; i<n; i++) {
-            cout<<"ok "<<endl;
-            cout<<261<<" "<<s<<" "<<c<<endl;
-            s=strtok(NULL," ");
-            cout<<259<<" "<<s<<endl;
+            s=strtok(NULL," (,");
+            dyn.out[i].mol = atoi(s.c_str());
+            s=strtok(NULL,")");
+            dyn.out[i].state = atoi(s.c_str());
           }
           in.getline(c,1000);
           s=strtok(c," ");
-        } //end populations
-      
+          dyn.out[0].file = s;
+        } //end output
       }
-      in.seekg(pos);
-      dyn.out = new Output[n];
-      for (int i=0; i<n; i++) {
-        in>>ws;
-        in.getline(c,1000);
-        s=strtok(c," ");
-        dyn.out[i].mol = atoi(s.c_str());
-        s=strtok(NULL," ");
-        mol[molcount].mv[i].max = atof(s.c_str());
-        s=strtok(NULL," ");
-        mol[molcount].mv[i].steps = atoi(s.c_str());
-      }
-      
-      in.getline(c,1000);
     } //end output
-
-    /** rotate **/
-    if (s1.compare(0,6,"rotate",0,6) == 0) {
-      int n=-1;
-      while(s.compare(0,3,"end",0,3)!=0) {
-        in>>ws;
-        in.getline(c,1000);
-        s=c;
-        n++;
-      }
-      in.seekg(pos);
-      mol[molcount].rot = new Rot[n];
-      for (int i=0; i<n; i++) {
-        in>>ws;
-        in.getline(c,1000);
-        s=strtok(c," ");
-        mol[molcount].rot[i].axis = s;
-        s=strtok(NULL," ");
-        mol[molcount].rot[i].theta = atof(s.c_str());
-      }
-      in.getline(c,1000);
-    } //end rot
   } //end mol block
-
 }
 
 /** read dynamics block **/

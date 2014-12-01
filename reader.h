@@ -57,6 +57,9 @@ struct Mol{
   /** Molecule Stack **/
   int number;
   int nstates;
+  int ncharges;
+  int nmov;
+  int nrot;
   ChargeFile *cf;
   Move *mv;
   Rot *rot;
