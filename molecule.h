@@ -14,6 +14,8 @@ using namespace std;
 
 class Molecule {
   public:
+  int nindices;
+  int *indices;
   int spinstate; //spin state, 0=singlet, 1=triplet
   int interaction; //type of interaction (Forster/3-body)
   double groundenergy; //ground state energy in a.u.
@@ -82,7 +84,9 @@ class Molecule {
   void setAtomicMasses(string t, string m);
   void setMass(double m);
 
+  /** Initialization Stuff **/
   void setInit(Reader r, int i);
+
   
   /*********************************************
    * Operators
@@ -90,8 +94,16 @@ class Molecule {
   Molecule operator= (const Molecule& m);
 
 };
+/*****************************************
+ * Non-class functions pertinent to 
+ * the Molecule object 
+ * **************************************/
 /** Initialize Molecule using parameters
    * from com file **/
-  Molecule *initialize(Reader r);
- 
+Molecule *initialize(Reader r);
+
+/** Initialize indices matrix **/
+void setIndices(Molecule *mol, const int x, const int y);
+
+/*****************************************************************************************/
 #endif // MOLECULE_H

@@ -49,6 +49,7 @@ struct Output {
 struct Calc{
 /** Calculation Stack **/
   string type;
+  int itype;
   double ewindow;
   int molecules;
 };

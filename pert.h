@@ -17,26 +17,19 @@
 #include "gsl/gsl_blas.h"
 using namespace std;
 
-double project(int mol, int state, const double *re, const double *im, const double *evecs) {
+double project(Molecule *mol,int nmol, int state, const double *re, const double *im, const double *evecs) {
   double res = 0;
   double sum = 0.;
-  double vecre[8];
-  double vecim[8];
+  double vecre[mol[0].nindices];
+  double vecim[mol[0].nindices];
 
   //convert psi to index-basis
-  cblas_dgemv(CblasColMajor,CblasNoTrans,8,8,1.,evecs,8,re,1,0.,vecre,1);
-  cblas_dgemv(CblasColMajor,CblasNoTrans,8,8,1.,evecs,8,im,1,0.,vecim,1);
+  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,re,1,0.,vecre,1);
+  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,im,1,0.,vecim,1);
 
-  for (int i=0; i<2; i++) {
-    for (int j=0; j<2; j++) {
-      int index;
-      if (mol == 0)
-        index = state+i*2+j*4;
-      else if (mol == 1)
-        index = i+state*2+j*4;
-      else if (mol == 2)
-        index  = i+j*2+state*4;
-      sum += vecre[index]*vecre[index] + vecim[index]*vecim[index];
+  for (int i=0; i<mol[0].nindices; i++) {
+    if (mol[0].indices[nmol+i*mol[0].nmol] == state) {
+      sum += vecre[i]*vecre[i] + vecim[i]*vecim[i];
     }
   }
 
@@ -44,63 +37,70 @@ double project(int mol, int state, const double *re, const double *im, const dou
 }
 
 void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart, double tfinish,
-                  double dtt, double *intham) {
-  double *psire = new double[8];
-  double *psiim = new double[8];
-  double *dpsire = new double[8];
-  double *dpsiim = new double[8];
+                  double dtt, double *intham, Reader r) {
+  double *psire = new double[mol[0].nindices];
+  double *psiim = new double[mol[0].nindices];
+  double *dpsire = new double[mol[0].nindices];
+  double *dpsiim = new double[mol[0].nindices];
   double ttime = tstart;
 
   //construct full hamiltonian
   double *ham, *diagham;
-  ham = new double[64];
-  diagham = new double[64];
-  for (int i=0; i<8; i++) {
-    ham[i+i*8] = energies[i]; //coul.int3 already has energies in it
-    for (int j=0; j<8; j++) {
-      ham[i+j*8] += intham[i+j*8] + coul.int3[i+j*8];
-      cout<<i<<" "<<j<<" hams "<<intham[i+j*8]<<" "<<coul.int3[i+j*8]<<" "<<ham[i+j*8]<<endl;
+  ham = new double[mol[0].nindices*mol[0].nindices];
+  diagham = new double[mol[0].nindices*mol[0].nindices];
+  for (int i=0; i<mol[0].nindices*mol[0].nindices; i++)
+    ham[i] = 0.;
+  for (int i=0; i<mol[0].nindices; i++) {
+    ham[i+i*mol[0].nindices] = energies[i];
+  }
+  for (int i=0; i<mol[0].nindices; i++) {
+    for (int j=0; j<mol[0].nindices; j++) {
+      ham[i+j*mol[0].nindices] += (intham[i+j*mol[0].nindices] 
+            + coul.int3[i+j*mol[0].nindices]);//*window(energies[i],energies[j],r.calc.ewindow,0);
+      //Convert from au to eV
+      ham[i+j*mol[0].nindices] *= /*27.211396*/window(energies[i],energies[j],r.calc.ewindow,0);
+      cout<<i<<" "<<j<<" hams "<<intham[i+j*mol[0].nindices]<<" "<<coul.int3[i+j*mol[0].nindices]<<" "<<ham[i+j*mol[0].nindices]<<endl;
     }
   }
 
   //diagonalize full hamiltonian
-  gsl_matrix_view m = gsl_matrix_view_array(ham,8,8);
-  gsl_vector *eval = gsl_vector_alloc(8);
-  gsl_matrix *evec = gsl_matrix_alloc(8,8);
-  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(8);
+  gsl_matrix_view m = gsl_matrix_view_array(ham,mol[0].nindices,mol[0].nindices);
+  gsl_vector *eval = gsl_vector_alloc(mol[0].nindices);
+  gsl_matrix *evec = gsl_matrix_alloc(mol[0].nindices,mol[0].nindices);
+  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(mol[0].nindices);
   gsl_eigen_symmv(&m.matrix,eval,evec,w);
   gsl_eigen_symmv_free(w);
 
-  //coul.diagonalize(8,coul.evecs3,coul.evals3,coul.int3);
-  double vec[8],vec2[8],evecs[64];
-  for (int i=0; i<8; i++) {
+  //coul.diagonalize(mol[0].nindices,coul.evecs3,coul.evals3,coul.int3);
+  double vec[mol[0].nindices],vec2[mol[0].nindices],evecs[mol[0].nindices*mol[0].nindices];
+  for (int i=0; i<mol[0].nindices; i++) {
     cout<<"Full evals "<<gsl_vector_get(eval,i)<<endl;
   }
-  for (int i=0; i<8; i++) {
-    for (int j=0; j<8; j++) {
-      evecs[i+j*8] = gsl_matrix_get(evec,i,j);
-      cout<<"Full evecs "<<i<<" "<<j<<" "<<evecs[i+j*8]<<endl;
+  for (int i=0; i<mol[0].nindices; i++) {
+    for (int j=0; j<mol[0].nindices; j++) {
+      evecs[i+j*mol[0].nindices] = gsl_matrix_get(evec,i,j);
+      cout<<"Full evecs "<<i<<" "<<j<<" "<<evecs[i+j*mol[0].nindices]<<endl;
     }
   }
   
   //convert initial state to eigenbasis
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<mol[0].nindices; i++) {
     psire[i] = 0.;
     psiim[i] = 0.;
   }
-  psire[1] = 1/sqrt(2);
-  psire[0] = 1/sqrt(2);
+  psire[1] = 1.;
+  //psire[0] = 1/sqrt(2);
   //psire[3] = 1;
 
-  double ham2[64],tempm[64],tempm2[64];
-  cblas_dgemv(CblasColMajor,CblasTrans,8,8,1.,evecs,8,psire,1,0.,dpsire,1);
-  cblas_dgemv(CblasColMajor,CblasTrans,8,8,1.,evecs,8,psiim,1,0.,dpsiim,1);
+  double ham2[mol[0].nindices*mol[0].nindices],tempm[mol[0].nindices*mol[0].nindices],tempm2[mol[0].nindices*mol[0].nindices];
+  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,psire,1,0.,dpsire,1);
+  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,psiim,1,0.,dpsiim,1);
   
   //project onto selected state
   int state = 0;
   int site = 0;
 
-  double population = project(site,state,dpsire,dpsiim,evecs);
+  double population = project(mol,site,state,dpsire,dpsiim,evecs);
   
   ofstream outfile;
   outfile.open("populations.dat");
@@ -109,7 +109,7 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   //propagate wavefunction in time
   double initenergy = 0.;
   double norm = 0.;
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<mol[0].nindices; i++) {
     initenergy += energies[i]*(psire[i]*psire[i]+psiim[i]*psiim[i]);
  }
   
@@ -119,29 +119,30 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   
   while (ttime < tfinish) {
 
-    for (int i=0; i<8; i++) {
-      double ev = gsl_vector_get(eval,i);
+    for (int i=0; i<mol[0].nindices; i++) {
+      //Convert to eV
+      double ev = gsl_vector_get(eval,i)*27.211;
       dpsire[i] = cos(ev*dtt/planck)*dpsire[i] + sin(ev*dtt/planck)*dpsiim[i];
       dpsiim[i] = cos(ev*dtt/planck)*dpsiim[i] - sin(ev*dtt/planck)*dpsire[i];
     }
 
     if (counter%10000 == 0) {
-    population = project(0,1,dpsire,dpsiim,evecs);
-    cout<<"population of donor excited state = "<<population<<endl;
-    double energy = 0.;
-    norm = 0.;
-    for (int i=0; i<8; i++) {
-      energy += gsl_vector_get(eval,i)*(dpsire[i]*dpsire[i]+dpsiim[i]*dpsiim[i]);
-      norm += (dpsire[i]*dpsire[i]+dpsiim[i]*dpsiim[i]);
-    }
+      population = project(mol,0,1,dpsire,dpsiim,evecs);
+      cout<<"population of donor excited state = "<<population<<endl;
+      double energy = 0.;
+      norm = 0.;
+      for (int i=0; i<mol[0].nindices; i++) {
+        energy += gsl_vector_get(eval,i)*(dpsire[i]*dpsire[i]+dpsiim[i]*dpsiim[i]);
+        norm += (dpsire[i]*dpsire[i]+dpsiim[i]*dpsiim[i]);
+      }
 
-    outfile<<ttime<<" "<<project(0,0,dpsire,dpsiim,evecs)
-      <<" "<<project(1,0,dpsire,dpsiim,evecs)
-      <<" "<<project(2,0,dpsire,dpsiim,evecs)
-      <<" "<<project(0,1,dpsire,dpsiim,evecs)
-      <<" "<<project(1,1,dpsire,dpsiim,evecs)
-      <<" "<<project(2,1,dpsire,dpsiim,evecs)
-      <<" "<<norm<<endl;
+      outfile<<ttime<<" ";
+      for (int m=0; m<mol[0].nmol; m++) {
+        for (int st=0; st<mol[m].nstates; st++) {
+          outfile<<project(mol,m,st,dpsire,dpsiim,evecs)<<" ";
+        }
+      }
+      outfile<<" "<<norm<<" "<<energy<<endl;
     }
     ttime += dtt;
     counter ++;
@@ -154,139 +155,132 @@ void pertCalcNonDegen(Molecule *mol, Coulomb coul, double *energies,double *int3
   cout<<" *** in pertCalc, using constant energy differences *** "<<endl;
   
   /** Scale Coulomb interaction NB: Fix this! **/
-  for (int i=0; i<8; i++) { //initial state
-    coul.int3[i+i*8] -= energies[i];
-    for (int j=0; j<8; j++) { //final state
+  for (int i=0; i<mol[0].nindices; i++) { //initial state
+    coul.int3[i+i*mol[0].nindices] -= energies[i];
+    for (int j=0; j<mol[0].nindices; j++) { //final state
       if (i!=j)
-      coul.int3[i+j*8] /= 1.;
+      coul.int3[i+j*mol[0].nindices] /= 1.;
     }
   }
-  double res[64];
+  double res[mol[0].nindices*mol[0].nindices];
   
   //Make diagonal hamiltonian with exciton energies on the diagonal
   double sum = 0.;
-  for (int i=0; i<8; i++) { //initial state
-    for (int j=0; j<8; j++) { //final state
+  for (int i=0; i<mol[0].nindices; i++) { //initial state
+    for (int j=0; j<mol[0].nindices; j++) { //final state
       sum = 0.;
-      for (int k=0; k<8; k++) { //intermediate state
+      for (int k=0; k<mol[0].nindices; k++) { //intermediate state
         if (i==k) continue;
         if (energies[i] != energies[k])
-          sum += coul.int3[i+k*8]*coul.int3[k+j*8]/(energies[i]-energies[k]);
+          sum += coul.int3[i+k*mol[0].nindices]*coul.int3[k+j*mol[0].nindices]/(energies[i]-energies[k]);
         else //CTC This is an appoximation!
-          sum += coul.int3[i+k*8]*coul.int3[k+j*8]/5;//(energies[i]-energies[k]);
+          sum += coul.int3[i+k*mol[0].nindices]*coul.int3[k+j*mol[0].nindices]/5;//(energies[i]-energies[k]);
           
           //Pring coupling elements
           if (i==3 && j==5) {
             cout<<"<"<<i<<"|V|"<<k<<"><"<<k<<"|V|"<<j<<"> = "
-            <<sum<<" "<<coul.int3[i+k*8]<<" "<<coul.int3[k+j*8]<<endl;
+            <<sum<<" "<<coul.int3[i+k*mol[0].nindices]<<" "<<coul.int3[k+j*mol[0].nindices]<<endl;
           }
         } //end intermediate state
-      res[i+j*8] = sum*window(energies[i],energies[j],1,0);
+      res[i+j*mol[0].nindices] = sum*window(energies[i],energies[j],1,0);
     } //end final state
   } //end initial state
- for (int i=0; i<8; i++)
-   for (int j=0; j<8; j++) {
-      cout<<i<<" "<<j<<" "<<res[i+j*8]<<"    <"<<i<<"|V|"<<j<<"> = "<<coul.int3[i+j*8]<<endl;
+ for (int i=0; i<mol[0].nindices; i++)
+   for (int j=0; j<mol[0].nindices; j++) {
+      cout<<i<<" "<<j<<" "<<res[i+j*mol[0].nindices]<<"    <"<<i<<"|V|"<<j<<"> = "<<coul.int3[i+j*mol[0].nindices]<<endl;
   }
 }
 
-void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum,double *intham) {
+void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum,double *intham, Reader r) {
   cout<<" *** in pertCalc*** "<<endl;
   
   /** Scale Coulomb interaction NB: Fix this! **/
-  for (int i=0; i<8; i++) { //initial state
-    //coul.int3[i+i*8] += energies[i];
-    for (int j=0; j<8; j++) { //final state
-    //if (i!=j)
-      //coul.int3[i+j*8] *= 10.;
-    }
-  }
-  double res[64];
+  double res[mol[0].nindices*mol[0].nindices];
   
   //Make diagonal hamiltonian with exciton energies on the diagonal
-  double ham[64],tildeint[64];
-  for (int i=0; i<64; i++) ham[i] = 0.;
-  for (int i=0; i<8; i++) {
-    ham[i+i*8] = energies[i];
+  double ham[mol[0].nindices*mol[0].nindices],tildeint[mol[0].nindices*mol[0].nindices];
+  
+  for (int i=0; i<mol[0].nindices*mol[0].nindices; i++) ham[i] = 0.;
+  
+  for (int i=0; i<mol[0].nindices; i++) {
+    ham[i+i*mol[0].nindices] = energies[i];
   }
 
   //Make C.ham.C^T
-  double ham2[64],tempm[64],tempm2[64];
-  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,
-              coul.evecs3,8,ham,8,0,tempm,8);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
-              tempm,8,coul.evecs3,8,0,ham2,8);
+  double ham2[mol[0].nindices*mol[0].nindices],tempm[mol[0].nindices*mol[0].nindices],tempm2[mol[0].nindices*mol[0].nindices];
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,mol[0].nindices,mol[0].nindices,1.,
+              coul.evecs3,mol[0].nindices,ham,mol[0].nindices,0,tempm,mol[0].nindices);
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,mol[0].nindices,mol[0].nindices,1.,
+              tempm,mol[0].nindices,coul.evecs3,mol[0].nindices,0,ham2,mol[0].nindices);
   //Make C.V.C^T
-  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,
-              coul.evecs3,8,coul.int3,8,0,tempm,8);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
-              tempm,8,coul.evecs3,8,0,tildeint,8);
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,mol[0].nindices,mol[0].nindices,1.,
+              coul.evecs3,mol[0].nindices,coul.int3,mol[0].nindices,0,tempm,mol[0].nindices);
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,mol[0].nindices,mol[0].nindices,1.,
+              tempm,mol[0].nindices,coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
 
   double sum = 0.;
   double numerator, denominator;
-  for (int i=0; i<8; i++) { //initial state
-    for (int j=0; j<8; j++) { //final state
+  for (int i=0; i<mol[0].nindices; i++) { //initial state
+    for (int j=0; j<mol[0].nindices; j++) { //final state
       numerator = 0.;
       denominator = 0.;
-      for (int k=0; k<8; k++) { //intermediate state
+      for (int k=0; k<mol[0].nindices; k++) { //intermediate state
         double sum1 = 0.;
         double sum2 = 0.;
         double sum3 = 0.;
         double sum4 = 0.;
         if (i==k) continue;
-        for (int a=0; a<8; a++) {
-          //for (int b=0; b<8; b++) {
+        for (int a=0; a<mol[0].nindices; a++) {
+          //for (int b=0; b<mol[0].nindices; b++) {
             //if (a!=b) continue;
-            //sum1 += coul.evecs3[i+a*8]*coul.evecs3[b+k*8]*tildeint[a+b*8];
-            sum1 += coul.evecs3[i+a*8]*coul.evecs3[k+a*8]*coul.evals3[a];
+            //sum1 += coul.evecs3[i+a*mol[0].nindices]*coul.evecs3[b+k*mol[0].nindices]*tildeint[a+b*mol[0].nindices];
+            sum1 += coul.evecs3[i+a*mol[0].nindices]*coul.evecs3[k+a*mol[0].nindices]*coul.evals3[a];
           //}
         }
-        for (int g=0; g<8; g++) {
-          //for (int d=0; d<8; d++) {
+        for (int g=0; g<mol[0].nindices; g++) {
+          //for (int d=0; d<mol[0].nindices; d++) {
             //if (g!=d) continue;
-            //sum2 += coul.evecs3[k+g*8]*coul.evecs3[d+j*8]*tildeint[g+d*8];     
-            sum2 += coul.evecs3[k+g*8]*coul.evecs3[j+g*8]*coul.evals3[g];
+            //sum2 += coul.evecs3[k+g*mol[0].nindices]*coul.evecs3[d+j*mol[0].nindices]*tildeint[g+d*mol[0].nindices];     
+            sum2 += coul.evecs3[k+g*mol[0].nindices]*coul.evecs3[j+g*mol[0].nindices]*coul.evals3[g];
           //}
         }
 
-        for (int a=0; a<8; a++) {
-          for (int b=0; b<8; b++) {
-            sum3 += coul.evecs3[i+a*8]*coul.evecs3[i+b*8]*ham2[a+b*8];
+        for (int a=0; a<mol[0].nindices; a++) {
+          for (int b=0; b<mol[0].nindices; b++) {
+            sum3 += coul.evecs3[i+a*mol[0].nindices]*coul.evecs3[i+b*mol[0].nindices]*ham2[a+b*mol[0].nindices];
           }
         }
-        for (int a=0; a<8; a++) {
-          for (int b=0; b<8; b++) {
-            sum4 += coul.evecs3[k+a*8]*coul.evecs3[k+b*8]*ham2[a+b*8];
+        for (int a=0; a<mol[0].nindices; a++) {
+          for (int b=0; b<mol[0].nindices; b++) {
+            sum4 += coul.evecs3[k+a*mol[0].nindices]*coul.evecs3[k+b*mol[0].nindices]*ham2[a+b*mol[0].nindices];
           }
         }
         
-        //numerator += coul.int3[i+k*8]*coul.int3[k+j*8]/(coul.evals3[i]-coul.evals3[k]); 
+        //numerator += coul.int3[i+k*mol[0].nindices]*coul.int3[k+j*mol[0].nindices]/(coul.evals3[i]-coul.evals3[k]); 
         
         numerator += sum1*sum2;//(coul.evals3[i]-coul.evals3[k]); //(sum3-sum4);
         denominator +=sum3-sum4;// coul.evals3[i] - coul.evals3[k];//sum3-sum4;
       //Pring coupling elements
           if (i==1 && j==6) {
             cout<<"<"<<i<<"|V|"<<k<<"><"<<k<<"|V|"<<j<<"> = "
-            <<numerator<<" "<<" "<<denominator<<" "<<tildeint[i+k*8]<<" "<<tildeint[k+j*8]<<endl;
+            <<numerator<<" "<<" "<<denominator<<" "<<numerator/denominator<<" "<<endl;
           }
         }
       
 
-      res[i+j*8] = numerator/denominator;
+      res[i+j*mol[0].nindices] = numerator/denominator;
     }
   }
-  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,
-              coul.evecs3,8,res,8,0,tempm,8);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
-              tempm,8,coul.evecs3,8,0,tildeint,8);
- for (int i=0; i<8; i++)
-   for (int j=0; j<8; j++) {
-   cout<<i<<"   "<<j<<"   "<<res[i+j*8]<<"   "
-      <<tildeint[i+j*8]*window(energies[i],energies[j],1,0)<<"       <"<<i<<"|V|"<<j<<"> = "<<coul.int3[i+j*8]<<endl;
+ 
+  for (int i=0; i<mol[0].nindices; i++)
+   for (int j=0; j<mol[0].nindices; j++) {
+   cout<<i<<"   "<<j<<"   "<<res[i+j*mol[0].nindices]<<"   <"
+      <<i<<"|V|"<<j<<"> = "<<coul.int3[i+j*mol[0].nindices]<<endl;
     
-    intham[i+j*8] = res[i+j*8]*window(energies[i],energies[j],0.4,0);
+    intham[i+j*mol[0].nindices] = res[i+j*mol[0].nindices];
+                     // *window(energies[i],energies[j],r.calc.ewindow,0);
   }
-  dum = res[1+6*8];
+  dum = res[1+6*mol[0].nindices];
 }
 
 void pertCalc(Molecule *mol, Coulomb coul,double *intham,double *energies) {
@@ -298,76 +292,76 @@ void pertCalc(Molecule *mol, Coulomb coul,double *intham,double *energies) {
   sum2 = 0.;
   temp3 = 0.;
 
-  for (int i=0; i<8; i++) { //initial
-    for (int j=0; j<8; j++) {//final
+  for (int i=0; i<mol[0].nindices; i++) { //initial
+    for (int j=0; j<mol[0].nindices; j++) {//final
       temp2 = 0.;
       temp3 = 0.;
-      for (int k=0; k<8; k++) {
-        temp2 += energies[i]*coul.evecs3[i+k*8]*coul.evecs3[i+k*8];
-        temp3 += energies[j]*coul.evecs3[j+k*8]*coul.evecs3[j+k*8];
+      for (int k=0; k<mol[0].nindices; k++) {
+        temp2 += energies[i]*coul.evecs3[i+k*mol[0].nindices]*coul.evecs3[i+k*mol[0].nindices];
+        temp3 += energies[j]*coul.evecs3[j+k*mol[0].nindices]*coul.evecs3[j+k*mol[0].nindices];
       }
       sum = 0.;
       sum2 = 0.;
       double energy;
       //if (i != j) {
-        for (int k=0; k<8; k++) {//intermediate zero order basis
+        for (int k=0; k<mol[0].nindices; k++) {//intermediate zero order basis
           if (i==k ) continue;
-            for (int l=0; l<8; l++) {
+            for (int l=0; l<mol[0].nindices; l++) {
               //i term
               energy = (coul.evals3[i]-coul.evals3[k]);//*(coul.evals3[j]-coul.evals3[k]);
-              temp = coul.evecs3[i+l*8]*coul.evecs3[k+l*8];
+              temp = coul.evecs3[i+l*mol[0].nindices]*coul.evecs3[k+l*mol[0].nindices];
               sum += temp*coul.evals3[l];//energy;
               
               //j term
                      //if ((i == 7 && j==7)) cout<<i<<" "<<j<<" "<<k<<" "<<l<<" sum adding "<<sum<<" "<<sum2<<" "<<temp<<endl;
             }
-            for (int l=0; l<8; l++) {
-              temp = coul.evecs3[j+l*8]*coul.evecs3[k+l*8];
+            for (int l=0; l<mol[0].nindices; l++) {
+              temp = coul.evecs3[j+l*mol[0].nindices]*coul.evecs3[k+l*mol[0].nindices];
               sum2 += temp*coul.evals3[l];
  
             }
           }
      // } else {
-      /*  for (int k=0; k<8; k++) {
+      /*  for (int k=0; k<mol[0].nindices; k++) {
           if (i==k) continue;
           energy = (coul.evals3[k]-coul.evals3[i])*(coul.evals3[k]-coul.evals3[i]);
-          sum += coul.evecs3[i+k*8]*coul.evecs3[i+k*8]
-            *coul.evecs3[i+k*8]*coul.evecs3[i+k*8]
+          sum += coul.evecs3[i+k*mol[0].nindices]*coul.evecs3[i+k*mol[0].nindices]
+            *coul.evecs3[i+k*mol[0].nindices]*coul.evecs3[i+k*mol[0].nindices]
             *coul.evals3[k]*coul.evals3[k]/energy;
         }
         sum *= -0.5;*/
       //}
       
-      intham[i+j*8] = 2*sum*sum2*window(energies[i],energies[j],1,0);
+      intham[i+j*mol[0].nindices] = 2*sum*sum2*window(energies[i],energies[j],1,0);
           }
   }
-  double mat[64],mat2[64];
-      cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,
-              coul.evecs3,8,intham,8,0,mat,8);
-      cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,8,8,8,1.,
-              mat,8,coul.evecs3,8,0,mat2,8);
-      for (int i=0; i<8; i++) 
-        for (int j=0; j<8; j++)
-        cout<<i<<" "<<j<<" "<<intham[i+j*8]<<" "<<mat2[i+j*8]<<endl;
+  double mat[mol[0].nindices*mol[0].nindices],mat2[mol[0].nindices*mol[0].nindices];
+      cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,mol[0].nindices,mol[0].nindices,1.,
+              coul.evecs3,mol[0].nindices,intham,mol[0].nindices,0,mat,mol[0].nindices);
+      cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,mol[0].nindices,mol[0].nindices,1.,
+              mat,mol[0].nindices,coul.evecs3,mol[0].nindices,0,mat2,mol[0].nindices);
+      for (int i=0; i<mol[0].nindices; i++) 
+        for (int j=0; j<mol[0].nindices; j++)
+        cout<<i<<" "<<j<<" "<<intham[i+j*mol[0].nindices]<<" "<<mat2[i+j*mol[0].nindices]<<endl;
 
-      double dumd[64];
-      for (int i=0; i<8; i++) {
-        for (int j=0; j<8; j++) {
+      double dumd[mol[0].nindices*mol[0].nindices];
+      for (int i=0; i<mol[0].nindices; i++) {
+        for (int j=0; j<mol[0].nindices; j++) {
           double dum = 0.;
-          for (int k=0; k<8; k++) {
+          for (int k=0; k<mol[0].nindices; k++) {
             //if (k==i || k==j) continue;
-            dum += coul.int3[i+k*8]*coul.int3[k+j*8];
+            dum += coul.int3[i+k*mol[0].nindices]*coul.int3[k+j*mol[0].nindices];
           }
-          dumd[i+j*8] = dum;
-          cout<<i<<" "<<j<<" coulomb "<<dum<<" "<<coul.int3[i+j*8]<<endl;
+          dumd[i+j*mol[0].nindices] = dum;
+          cout<<i<<" "<<j<<" coulomb "<<dum<<" "<<coul.int3[i+j*mol[0].nindices]<<endl;
         }
       }
  double term1 = 0.;
  temp = 0.;
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<mol[0].nindices; i++) {
     //if (i==1) continue;
-    term1 += coul.evecs3[1+i*8]*coul.evecs3[2+i*8]*coul.evals3[i];
-    temp += energies[7]*coul.evecs3[7+i*8]*coul.evecs3[7+i*8];
+    term1 += coul.evecs3[1+i*mol[0].nindices]*coul.evecs3[2+i*mol[0].nindices]*coul.evals3[i];
+    temp += energies[7]*coul.evecs3[7+i*mol[0].nindices]*coul.evecs3[7+i*mol[0].nindices];
     }
   cout<<"term 1 "<<term1<<" temp "<<temp<<endl;
 }

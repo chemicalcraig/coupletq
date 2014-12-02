@@ -1,8 +1,8 @@
 #include "coulomb.h"
 
-Coulomb::Coulomb() {
+Coulomb::Coulomb(const int n) {
   this->n2d = 4;
-  n3d = 8;
+  n3d = n;
 
   //2-bit stuff
   this->int2 = new double[this->n2d*this->n2d];
@@ -11,10 +11,10 @@ Coulomb::Coulomb() {
   this->dint2 = new double[this->n2d*this->n2d];
   
   //3-bit stuff
-  int3 = new double[64];
-  this->evals3 = new double[64];
-  evecs3 = new double[64];
-  dint3 = new double[64];
+  int3 = new double[n*n];
+  this->evals3 = new double[n*n];
+  evecs3 = new double[n*n];
+  dint3 = new double[n*n];
 }
 
 /** Diagonalize the coulomb matrix **/

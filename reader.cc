@@ -51,6 +51,11 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
           /** calc type **/
           if (string(*it).compare(0,4,"type",0,4)==0) {
             calc.type = s;
+            if (s.compare(0,4,"pert",0,4)==0) {
+              calc.itype = 2;
+            } else if (s.compare(0,4,"fret",0,4)==0) {
+              calc.itype = 1;
+            }
           } else if (string(*it).compare(0,7,"ewindow",0,7)==0) {
             calc.ewindow = atof(s.c_str());
           } else if (string(*it).compare(0,9,"molecules",0,9)==0) {
@@ -139,6 +144,7 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
     /** charges **/
     if (s1.compare(0,7,"charges",0,7) == 0) {
       int n=-1;
+      cout<<"in charges "<<147<<endl;
       while(s.compare(0,3,"end",0,3)!=0) {
         in>>ws;
         in.getline(c,1000);
@@ -258,7 +264,7 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
             n++;
           }
           dyn.out = new Output[n];
-          c2 = s.c_str();
+          c2 = const_cast<char*>(s.c_str());
           s=strtok(c2," ");
           //s=strtok(NULL," ");
           for (int i=0; i<n; i++) {
@@ -306,8 +312,9 @@ Reader::Reader(string f) {
     
     /** check for main directive **/
     list<string>::iterator it = find(directives_.begin(),directives_.end(),s);
-    if (s.compare(0,9,"molecules",0,9) == 0)
+    if (s.compare(0,9,"molecules",0,9) == 0) {
       molcount++;
+    }
     //found directive
     if (it!=directives_.end()) {
       readBlock(*it,in,molcount);

@@ -47,12 +47,9 @@ double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
       }
       r12 = cblas_ddot(3,pos,1,pos,1);
       r12 = sqrt(r12);
-      //convert from angstroms to a0
-      r12 /= 0.529177249;
 
       temp += mol[I].atoms[ii].charges[i+j*mol[I].nstates] 
-            * mol[J].atoms[jj].charges[k+l*mol[J].nstates]
-            /r12;
+            * mol[J].atoms[jj].charges[k+l*mol[J].nstates]/r12;
      // if (I==0 && J==1 && i==0 && j==1 && k==1 && l==0){
      //   cout<<"charges "<<temp<<" temp -< "<<mol[I].atoms[ii].charges[i+j*mol[I].nstates]<<" "
      //             <<mol[J].atoms[jj].charges[k+l*mol[J].nstates]<<endl;
@@ -61,33 +58,6 @@ double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
     }
   }
   return temp;
-}
-
-/** Create coulom matrix, overloaded for windowing **/
-void createCoulomb3(Molecule *mol, Coulomb coul, double *en,Reader r) {
-  for (int i=0; i<mol[0].nindices; i++) {
-    for (int j=0; j<mol[0].nindices; j++) {
-      coul.int3[i+j*mol[0].nindices] = 0.;
-      for (int m1=0; m1<mol[0].nmol; m1++) {
-        for (int m2=0; m2<mol[0].nmol; m2++) {
-          if (m1 == m2) continue;
-          int kron=1;
-          for (int k=0; k<mol[0].nmol; k++) {
-            if ((k==m1) || (k==m2)) continue;
-            kron *= Kronecker(mol[0].indices[k+i*mol[0].nmol],mol[0].indices[k+j*mol[0].nmol]);
-          }
-          coul.int3[i+j*mol[0].nindices] += getCoulomb(mol,m1,m2,
-                               mol[0].indices[m1+i*mol[0].nmol],
-                               mol[0].indices[m1+j*mol[0].nmol],
-                               mol[0].indices[m2+i*mol[0].nmol],
-                               mol[0].indices[m2+j*mol[0].nmol])*kron
-                                *window(en[i],en[j],r.calc.ewindow,0);
-        }//end molecule 2
-      }//end molecule 1
-      coul.int3[i+j*mol[0].nindices] /= 2.;
-      cout<<"making coulomb with window "<<i<<" "<<j<<" "<<coul.int3[i+j*mol[0].nindices]<<endl;
-    }//end index column
-  }//end index row
 }
 
 void createCoulomb3(Molecule *mol, Coulomb coul) {
@@ -163,7 +133,7 @@ void createCoulomb3(Molecule *mol, double *mat) {
             if ((k==m1) || (k==m2)) continue;
             kron *= Kronecker(mol[0].indices[k+i*mol[0].nmol],mol[0].indices[k+j*mol[0].nmol]);
           }
-          mat[i+j*mol[0].nindices] += getCoulomb(mol,m1,m2,
+          mat[i+j*mol[0].nindices] = getCoulomb(mol,m1,m2,
                                mol[0].indices[m1+i*mol[0].nmol],
                                mol[0].indices[m1+j*mol[0].nmol],
                                mol[0].indices[m2+i*mol[0].nmol],
@@ -216,8 +186,6 @@ double computeCoupling(Molecule mold, Molecule mola,int dcharge, int acharge) {
           *(mold.atoms[i].pos[k] - mola.atoms[j].pos[k]);
       }
       double rda = sqrt(rda2);
-      //convert from angstroms to a0
-      rda *= 1.889725988579;
       //cout<<i<<" "<<j<<" "<<rda<<" r12 "<<endl;
       //cout<<"charges "<<mold.atoms[i].charges[dcharge]<<" "<<mola.atoms[j].charges[acharge]<<endl;
       interaction = mold.atoms[i].charges[dcharge] * mola.atoms[j].charges[acharge] / rda;
@@ -289,9 +257,9 @@ bool calcdip(Molecule &mol) {
   double dz = 0.;
   
   for (int i=0; i<mol.natoms; i++) {
-    dx += mol.atoms[i].pos[0] * mol.atoms[i].charges[0];
-    dy += mol.atoms[i].pos[1] * mol.atoms[i].charges[0];
-    dz += mol.atoms[i].pos[2] * mol.atoms[i].charges[0];
+    dx += mol.atoms[i].pos[0] * mol.atoms[i].charges[1];
+    dy += mol.atoms[i].pos[1] * mol.atoms[i].charges[1];
+    dz += mol.atoms[i].pos[2] * mol.atoms[i].charges[1];
   }
 
   dx *= ang2au;

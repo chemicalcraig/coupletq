@@ -17,19 +17,19 @@ int main(int argc, char **argv) {
   /** Read input com file **/
   Reader read(argv[1]);
   mol = initialize(read);
-
-  //open input file
-//  comfile.open(argv[1]);
-
-  /*
-   * Parse input comfile and retrieve necessary data
-   * this sets up the main Molecule object
-   */
-//  mol = parseComfile(comfile);
-
+  
   /** Set COM **/
   for (int i=0; i<read.calc.molecules; i++) {
     mol[i].setCom();
+  }
+
+  /** scale state charges for pmi, nelec=174 **/
+  for (int i=0; i<mol[0].nmol; i++) {
+    for (int j=0; j<mol[i].natoms; j++) {
+      for (int k=0; k<mol[i].nstates; k++) {
+        mol[i].atoms[j].charges[k+k*mol[i].nstates] *= 1;//74;
+      }
+    }
   }
   
   /** set up printer and output files **/
@@ -52,40 +52,18 @@ int main(int argc, char **argv) {
   /** Set up initial conformations **/
   for (int i=0; i<read.calc.molecules; i++) {
     mol[i].setInit(read,i);
+    calcdip(mol[i]);
   }
   
-  /** min, max, nsteps **/
-  //mol[0].rotateTheta(M_PI/2,1);
-  //mol[0].grid[0].setParams(-3.,-3.,1);
-
-//  mol[1].grid[0].setParams(3., 3., 1);
-  //mol[1].grid[1].setParams(1.,1.,1);
-  //mol[1].grid[2].setParams(3.,3.,1);
-  //mol[1].rotateTheta(-1*M_PI/2,1);
-//  if (mol[0].interaction > 1) {
-//    mol[2].grid[0].setParams(-3., -3., 1);
-    //mol[2].grid[1].setParams(-1.,-1.,1);
-    //mol[2].grid[2].setParams(5.,5.,1);
-    //mol[2].rotateTheta(1*M_PI/2,1);
-    //mol[2].rotateTheta(M_PI,0);
-//  }
-
-
 /*****************  Setting up Molecular distribution ******************/
   /** Calculate transition dipole from charges **/
   /** This also sets the transition vector elements **/
   for (int i=0; i<read.calc.molecules; i++) {
- //   calcdip(mol[i]);
     mol[i].setPostoInit();
   }
 
-
   //reset initial positions
   arrangeMol(mol);
-  for (int i=0; i<read.calc.molecules; i++) {
-//    mol[i].setCom();
-//    mol[i].setPostoInit();
-  }
  
   /** Print initial positions **/
   ofstream posout;
@@ -98,93 +76,77 @@ int main(int argc, char **argv) {
       posout<<endl;
     }
   }
-exit(0);    
-  //CTC test start
-  double temp[64],temp2[64],temp3[4],temp4[4],temp5[4];
-  Coulomb coul;
+
+  /** Set indicies matrix **/
+  int nindex=1;
+
+  for (int i=0; i<read.calc.molecules; i++)
+    nindex *= mol[i].nstates;
+  mol[0].nindices = nindex;
+  setIndices(mol,mol[0].nmol,nindex);
+  for (int i=0; i<nindex; i++) 
+    for (int j=0; j<mol[0].nmol; j++) 
+      cout<<"state "<<i<<" mol "<<j<<" "<<mol[0].indices[j+i*mol[0].nmol]<<endl;
+
+  /** Create Coulomb Matrix **/
+  double temp[nindex*nindex],temp2[nindex*nindex];
+  Coulomb coul(nindex);
+ 
+  /** Create state energy matrix **/
+  double energies[nindex];
+  for (int i=0; i<nindex; i++) {
+    energies[i] = 0.;
+    for (int m=0; m<mol[0].nmol; m++) {
+      energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
+    }
+    //Convert to eV
+    //energies[i] *= 27.211396;
+    cout<<"energies "<<i<<" "<<energies[i]<<endl;
+  }
   createCoulomb3(mol,coul);
   createCoulomb3(mol,int3);
-  double energies[8];
-  for (int i=0; i<2; i++) 
-    for (int j=0; j<2; j++) 
-      for (int k=0; k<2; k++) {
-        int index = i+j*2+k*4;
-        energies[index] = (mol[0].excenergy[i] )//- mol[0].groundenergy)
-                            + (mol[1].excenergy[j])// - mol[1].groundenergy)
-                            + (mol[2].excenergy[k]);// - mol[2].groundenergy);
-        energies[index] *= 27.211396;
-cout<<"energies "<<index<<" "<<energies[index]<<endl;
-        //if (mol[0].interaction>1)
-          //coul.int3[index+index*8] += energies[index];
-    //    cout<<index<<" energy index "<<coul.int3[index+index*8]<<endl;
-      }
+ 
   /** Filter Coulomb Matrix for energy conservation **/
-  
-
-  
-  for (int i=0; i<8; i++) {
-    for (int j=0; j<8; j++) {
+  for (int i=0; i<nindex; i++) {
+    for (int j=0; j<nindex; j++) {
+      int3[i+j*nindex] = coul.int3[i+j*nindex];
       if (i!=j) {
-      coul.int3[i+j*8] *= 10.;
-      //int3[i+j*8] = coul.int3[i+j*8];
-      coul.int3[i+j*8] *= window(energies[i],energies[j],0.4,0);
-      //cout<<i<<" "<<j<<" "<<window(energies[i],energies[j],2,0)<<"   window"<<endl;
+        //convert from au to eV
+        //int3[i+j*nindex] *= 1.;
+        //coul.int3[i+j*nindex] *= 1.;
+        //int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
       }
+      cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
     }
   }
+  
 
-  gsl_matrix_view m = gsl_matrix_view_array(int3,8,8);
-  gsl_vector *eval = gsl_vector_alloc(8);
-  gsl_matrix *evec = gsl_matrix_alloc(8,8);
-  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(8);
+  /** Get eigensystem of Coulomb matrix **/
+  gsl_matrix_view m = gsl_matrix_view_array(int3,nindex,nindex);
+  gsl_vector *eval = gsl_vector_alloc(nindex);
+  gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
+  gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(nindex);
   gsl_eigen_symmv(&m.matrix,eval,evec,w);
   gsl_eigen_symmv_free(w);
-
+  
+  createCoulomb3(mol,coul,energies,read);
+  createCoulomb3(mol,int3);
+ 
   //coul.diagonalize(8,coul.evecs3,coul.evals3,coul.int3);
-  double vec[8],vec2[8];
-  for (int i=0; i<8; i++) {vec[i] = gsl_matrix_get(evec,i,0);}
+  double vec[nindex],vec2[nindex];
+  for (int i=0; i<nindex; i++) {vec[i] = gsl_matrix_get(evec,i,0);}
   double sum = 0.;
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<nindex; i++) {
     sum = 0.;
     coul.evals3[i] = gsl_vector_get(eval,i);
     //cout<<"evals "<<i<<" "<<coul.evals3[i]<<endl;
-    for (int j=0; j<8; j++) {
-      sum += coul.int3[i+j*8]*vec[j];
-      coul.evecs3[i+j*8] = gsl_matrix_get(evec,i,j);
-      cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*8]<<endl;
+    for (int j=0; j<nindex; j++) {
+      sum += coul.int3[i+j*nindex]*vec[j];
+      coul.evecs3[i+j*nindex] = gsl_matrix_get(evec,i,j);
+      cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*nindex]<<endl;
     }
   }
-//  exit(0);
-/*  
-  coul.diagonalize(8,coul.evecs3,coul.evals3,coul.int3);
-  for (int i=0; i<8; i++) {
-    for (int j=0; j<8; j++) {
-      coul.evecs3[i+j*8] = temp[i+j*8];
-    }
-  }
-*/
-  /** Check if evects are orthogonal **/
-  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,8,8,8,1.,
-              coul.evecs3,8,coul.int3,8,0,temp2,8);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,8,8,8,1.,
-              coul.evecs3,8,coul.evecs3,8,0,temp,8);
 
-
-  for (int i=0; i<8; i++) {
-    for (int j=0; j<8; j++) {
-      //cout<<i<<" "<<j<<" diagonal? "<<temp[i+j*8]<<endl;
-      //coul.dint3[i+j*8] = temp[i+j*8];
-    }
-  }
-  //exit(0);
-  //coul.createCoulomb2(mol);
-  //coul.diagonalize(coul.n2d,coul.evecs2,coul.evals2,coul.int2);
-  for (int i=0; i<8; i++) {
-    for (int j=0; j<8; j++) {
-      //cout<<i<<" "<<j<<" "<<coul.evecs3[i+j*8]<<endl;
-    }
-  }
-//  exit(0);
 //CTC e
 
 /*******************  Done Setting up molecules *****************************/
@@ -197,7 +159,7 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
   double slip;
   double coupling2;
 
-  switch (mol[0].interaction) {
+  switch (read.calc.itype) {
     case 1:
 /*      for (int i=0; i<mol[0].ngriddim; i++) { //x,y,z,...
         fretCalc(mol,coupling);
@@ -207,12 +169,18 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
 
       }
 */
-      for (int zi=0; zi<mol[1].grid[2].ngrid; zi++) {
-        //angle = 0.;
+//      for (int zi=0; zi<mol[1].grid[2].ngrid; zi++) {
+
+        for (int zi=0; 1; zi++) {
+//angle = 0.;
         //slip = mol[0].grid[1].min;
         //for (int thetai=0; thetai<mol[0].grid.ntheta; thetai++) {
         //for (int islip=0; islip<mol[0].grid[2].ngrid; islip++) {
-          fretCalc(mol,coupling);          
+
+          fretCalc(mol,coupling);        
+          
+          cout<<"Performing a FRET calculation now: "<<coupling*27.211396<<endl;
+          exit(0);
           print.appendData2d(outfile2,mol[1].grid[2].min+zi*mol[1].grid[2].dgrid,coupling);
           //print.appendData3d(outfile2,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling);
 
@@ -239,47 +207,48 @@ cout<<"energies "<<index<<" "<<energies[index]<<endl;
       int whichaxis = 0;
       //pertCalcDegen(mol,coul,energies,int3,dum);
       //pertCalc(mol,coul,intham,energies);
-      gsl_matrix_view m = gsl_matrix_view_array(int3,8,8);
-      gsl_vector *eval = gsl_vector_alloc(8);
-      gsl_matrix *evec = gsl_matrix_alloc(8,8);
-      gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(8);
+      gsl_matrix_view m = gsl_matrix_view_array(coul.int3,nindex,nindex);
+      gsl_vector *eval = gsl_vector_alloc(nindex);
+      gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
+      gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(nindex);
       gsl_eigen_symmv(&m.matrix,eval,evec,w);
 
-
-      for (int zi=0; zi<mol[1].grid[whichaxis].ngrid; zi++) {
+      for (int zi=0; zi<1; zi++) {
+      //for (int zi=0; zi<mol[1].grid[whichaxis].ngrid; zi++) {
         //pertCalcNonDegen(mol,coul,energies,int3,&dum);
-        pertCalcDegen(mol,coul,energies,int3,dum,intham);
-        propagateTime(mol,coul,energies,0,800,0.000001,intham);
+        pertCalcDegen(mol,coul,energies,int3,dum,intham,read);
+        propagateTime(mol,coul,energies,0,800,0.000001,intham,read);
+
         exit(0);
         print.appendData2d(outfile2,mol[1].grid[whichaxis].min+zi*mol[1].grid[whichaxis].dgrid,dum);
         mol[1].translate(whichaxis,mol[1].grid[whichaxis].dgrid);
         
         createCoulomb3(mol,coul);
         createCoulomb3(mol,int3);
-        for (int i=0; i<8; i++) {
-          coul.int3[i+i*8] += energies[i];
-          for (int j=0; j<8; j++) {
+        for (int i=0; i<nindex; i++) {
+          coul.int3[i+i*nindex] += energies[i];
+          for (int j=0; j<nindex; j++) {
             if (i!=j)
-              coul.int3[i+j*8] *= 10;
+ //             coul.int3[i+j*nindex] *= 10;
           }
         }
-        m = gsl_matrix_view_array(int3,8,8);
-        //w = gsl_eigen_symmv_alloc(8);
+        m = gsl_matrix_view_array(coul.int3,nindex,nindex);
+        //w = gsl_eigen_symmv_alloc(nindex);
         gsl_eigen_symmv(&m.matrix,eval,evec,w);
 
-        double vec[8],vec2[8];
-        for (int i=0; i<8; i++) {vec[i] = gsl_matrix_get(evec,i,0);}
+        double vec[nindex],vec2[nindex];
+        for (int i=0; i<nindex; i++) {vec[i] = gsl_matrix_get(evec,i,0);}
         double sum = 0.;
-        for (int i=0; i<8; i++) {
+        for (int i=0; i<nindex; i++) {
           sum = 0.;
           coul.evals3[i] = gsl_vector_get(eval,i);
-          //coul.int3[i+i*8] += energies[i];
+          //coul.int3[i+i*nindex] += energies[i];
           //cout<<"evals "<<i<<" "<<coul.evals3[i]<<endl;
-          for (int j=0; j<8; j++) {
+          for (int j=0; j<nindex; j++) {
            // if (i!=j)
-             // coul.int3[i+j*8] *= 10;
-            coul.evecs3[i+j*8] = gsl_matrix_get(evec,i,j);
-            cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*8]<<endl;
+             // coul.int3[i+j*nindex] *= 10;
+            coul.evecs3[i+j*nindex] = gsl_matrix_get(evec,i,j);
+            cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*nindex]<<endl;
           }
         }
       }
