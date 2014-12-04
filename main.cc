@@ -229,7 +229,7 @@ int main(int argc, char **argv) {
           coul.int3[i+i*nindex] += energies[i];
           for (int j=0; j<nindex; j++) {
             if (i!=j)
- //             coul.int3[i+j*nindex] *= 10;
+              coul.int3[i+j*nindex] *= 10;
           }
         }
         m = gsl_matrix_view_array(coul.int3,nindex,nindex);

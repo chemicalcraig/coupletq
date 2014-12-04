@@ -115,13 +115,16 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   
   int counter = 1;
   //Planck's constant in ev fs
-  double planck = 4.135667516;
+  double planck = 1;//4.135667516;
   
+  //convert dt from au to fs
+  //dtt *= .02418884326505;
+
   while (ttime < tfinish) {
 
     for (int i=0; i<mol[0].nindices; i++) {
       //Convert to eV
-      double ev = gsl_vector_get(eval,i)*27.211;
+      double ev = gsl_vector_get(eval,i);
       dpsire[i] = cos(ev*dtt/planck)*dpsire[i] + sin(ev*dtt/planck)*dpsiim[i];
       dpsiim[i] = cos(ev*dtt/planck)*dpsiim[i] - sin(ev*dtt/planck)*dpsire[i];
     }
@@ -136,7 +139,7 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
         norm += (dpsire[i]*dpsire[i]+dpsiim[i]*dpsiim[i]);
       }
 
-      outfile<<ttime<<" ";
+      outfile<<ttime*.02418884326505<<" ";
       for (int m=0; m<mol[0].nmol; m++) {
         for (int st=0; st<mol[m].nstates; st++) {
           outfile<<project(mol,m,st,dpsire,dpsiim,evecs)<<" ";
