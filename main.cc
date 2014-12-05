@@ -97,12 +97,19 @@ int main(int argc, char **argv) {
   for (int i=0; i<nindex; i++) {
     energies[i] = 0.;
     for (int m=0; m<mol[0].nmol; m++) {
-      energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
+      if (m==1 || m==2)
+        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]]*1.33;
+      else
+        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
     }
+    energies[0] = 0.;
+
     //Convert to eV
     //energies[i] *= 27.211396;
     cout<<"energies "<<i<<" "<<energies[i]<<endl;
   }
+  
+  /** Create unfiltered Coulomb matrix **/
   createCoulomb3(mol,coul);
   createCoulomb3(mol,int3);
  
@@ -120,17 +127,16 @@ int main(int argc, char **argv) {
     }
   }
   
-
   /** Get eigensystem of Coulomb matrix **/
-  gsl_matrix_view m = gsl_matrix_view_array(int3,nindex,nindex);
+  gsl_matrix_view m = gsl_matrix_view_array(coul.int3,nindex,nindex);
   gsl_vector *eval = gsl_vector_alloc(nindex);
   gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
   gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(nindex);
   gsl_eigen_symmv(&m.matrix,eval,evec,w);
   gsl_eigen_symmv_free(w);
   
-  createCoulomb3(mol,coul,energies,read);
-  createCoulomb3(mol,int3);
+  /** Create filtered Coulob matrix **/
+  //createCoulomb3(mol,coul,energies,read);
  
   //coul.diagonalize(8,coul.evecs3,coul.evals3,coul.int3);
   double vec[nindex],vec2[nindex];
@@ -146,6 +152,23 @@ int main(int argc, char **argv) {
       cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*nindex]<<endl;
     }
   }
+double tildeint[64],tempm[64];
+//Make C.V.C^T
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
+          mol[0].nindices,coul.int3,mol[0].nindices,0,tempm,mol[0].nindices);
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
+          coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
+ for (int i=0; i<mol[0].nindices; i++) {
+    for (int j=0; j<mol[0].nindices; j++) {
+      cout<<i<<" "<<j<<" "<<tempm[i+j*mol[0].nindices]<<" "
+        <<tildeint[i+j*mol[0].nindices]<<endl;
+    }
+  }
+ exit(0);
+ 
+
 
 //CTC e
 
@@ -215,9 +238,9 @@ int main(int argc, char **argv) {
 
       for (int zi=0; zi<1; zi++) {
       //for (int zi=0; zi<mol[1].grid[whichaxis].ngrid; zi++) {
-        //pertCalcNonDegen(mol,coul,energies,int3,&dum);
-        pertCalcDegen(mol,coul,energies,int3,dum,intham,read);
-        propagateTime(mol,coul,energies,0,800,0.000001,intham,read);
+        pertCalcEigen(mol,coul,energies,int3,intham);
+        //pertCalcDegen(mol,coul,energies,int3,dum,intham,read);
+        propagateTime(mol,coul,energies,0,80000,0.000001,intham,read);
 
         exit(0);
         print.appendData2d(outfile2,mol[1].grid[whichaxis].min+zi*mol[1].grid[whichaxis].dgrid,dum);

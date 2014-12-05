@@ -55,15 +55,58 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   }
   for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
-      ham[i+j*mol[0].nindices] += (intham[i+j*mol[0].nindices] 
-            + coul.int3[i+j*mol[0].nindices]);//*window(energies[i],energies[j],r.calc.ewindow,0);
-      //Convert from au to eV
-      ham[i+j*mol[0].nindices] *= /*27.211396*/window(energies[i],energies[j],r.calc.ewindow,0);
+     // ham[i+j*mol[0].nindices] += (intham[i+j*mol[0].nindices] 
+       //     + coul.int3[i+j*mol[0].nindices]);//*window(energies[i],energies[j],r.calc.ewindow,0);
+      /** Filter energies **/
+      //ham[i+j*mol[0].nindices] *= window(energies[i],energies[j],r.calc.ewindow,0);
       cout<<i<<" "<<j<<" hams "<<intham[i+j*mol[0].nindices]<<" "<<coul.int3[i+j*mol[0].nindices]<<" "<<ham[i+j*mol[0].nindices]<<endl;
     }
   }
 
+  //Make C.ham.C^T=ham2
+  double ham2[mol[0].nindices*mol[0].nindices];
+  double tempm[mol[0].nindices*mol[0].nindices];
+  double tempm2[mol[0].nindices*mol[0].nindices];
+  double tildeint[mol[0].nindices*mol[0].nindices];
+
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,mol[0].nindices,
+          ham,mol[0].nindices,0,tempm,mol[0].nindices);
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
+          coul.evecs3,mol[0].nindices,0,ham2,mol[0].nindices);
+  //Make C.V.C^T
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
+          mol[0].nindices,coul.int3,mol[0].nindices,0,tempm,mol[0].nindices);
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
+          coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
+  
+  for (int i=0; i<mol[0].nindices; i++) {
+    for (int j=0; j<mol[0].nindices; j++) {
+      cout<<i<<" "<<j<<" "<<tempm[i+j*mol[0].nindices]<<" "
+        <<tildeint[i+j*mol[0].nindices]<<" "<<ham2[i+j*mol[0].nindices]<<endl;
+    }
+  }
+ 
+ for (int i=0; i<mol[0].nindices*mol[0].nindices; i++)
+    ham[i] = 0.;
+
+  for (int i=0; i<mol[0].nindices; i++) {
+    for (int j=0; j<mol[0].nindices; j++) {
+      ham[i+j*mol[0].nindices] += ham2[i+j*mol[0].nindices] + intham[i+j*mol[0].nindices] 
+            + tildeint[i+j*mol[0].nindices];
+      /** Filter energies **/
+      ham[i+j*mol[0].nindices] *= window(coul.evals3[i],coul.evals3[j],r.calc.ewindow,0);
+      cout<<i<<" "<<j<<" hams "<<intham[i+j*mol[0].nindices]<<" "<<tildeint[i+j*mol[0].nindices]<<" "<<ham2[i+j*mol[0].nindices]<<" "<<ham[i+j*mol[0].nmol]<<endl;
+    }
+  }
+
+//exit(0);
+
   //diagonalize full hamiltonian
+  //gsl_matrix_view m = gsl_matrix_view_array(ham2,mol[0].nindices,mol[0].nindices);
   gsl_matrix_view m = gsl_matrix_view_array(ham,mol[0].nindices,mol[0].nindices);
   gsl_vector *eval = gsl_vector_alloc(mol[0].nindices);
   gsl_matrix *evec = gsl_matrix_alloc(mol[0].nindices,mol[0].nindices);
@@ -91,16 +134,21 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   psire[1] = 1.;
   //psire[0] = 1/sqrt(2);
   //psire[3] = 1;
+  double indtoev[mol[0].nindices*mol[0].nindices];
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,
+          coul.evecs3,mol[0].nindices,0,indtoev,mol[0].nindices);
 
-  double ham2[mol[0].nindices*mol[0].nindices],tempm[mol[0].nindices*mol[0].nindices],tempm2[mol[0].nindices*mol[0].nindices];
-  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,psire,1,0.,dpsire,1);
-  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,psiim,1,0.,dpsiim,1);
+
+  //double ham2[mol[0].nindices*mol[0].nindices],tempm[mol[0].nindices*mol[0].nindices],tempm2[mol[0].nindices*mol[0].nindices];
+  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,mol[0].nindices,1.,indtoev,mol[0].nindices,psire,1,0.,dpsire,1);
+  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,mol[0].nindices,1.,indtoev,mol[0].nindices,psiim,1,0.,dpsiim,1);
   
   //project onto selected state
   int state = 0;
   int site = 0;
 
-  double population = project(mol,site,state,dpsire,dpsiim,evecs);
+  double population = project(mol,site,state,dpsire,dpsiim,indtoev);
   
   ofstream outfile;
   outfile.open("populations.dat");
@@ -142,7 +190,7 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
       outfile<<ttime*.02418884326505<<" ";
       for (int m=0; m<mol[0].nmol; m++) {
         for (int st=0; st<mol[m].nstates; st++) {
-          outfile<<project(mol,m,st,dpsire,dpsiim,evecs)<<" ";
+          outfile<<project(mol,m,st,dpsire,dpsiim,indtoev)<<" ";
         }
       }
       outfile<<" "<<norm<<" "<<energy<<endl;
@@ -154,44 +202,42 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
 
 /** Perturbation Calculation in eigenbasis of the 3-bit 
  * Coulomb operator **/
-void pertCalcNonDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum) {
-  cout<<" *** in pertCalc, using constant energy differences *** "<<endl;
+void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,double *intham) {
+  cout<<" *** in pertCalc, using eigenbasis of V *** "<<endl;
   
-  /** Scale Coulomb interaction NB: Fix this! **/
-  for (int i=0; i<mol[0].nindices; i++) { //initial state
-    coul.int3[i+i*mol[0].nindices] -= energies[i];
-    for (int j=0; j<mol[0].nindices; j++) { //final state
-      if (i!=j)
-      coul.int3[i+j*mol[0].nindices] /= 1.;
-    }
-  }
   double res[mol[0].nindices*mol[0].nindices];
   
-  //Make diagonal hamiltonian with exciton energies on the diagonal
+  //Make diagonal hamiltonian with eigen energies on the diagonal
   double sum = 0.;
+  double sum1=0.;
+  double sum2=0.;
   for (int i=0; i<mol[0].nindices; i++) { //initial state
     for (int j=0; j<mol[0].nindices; j++) { //final state
       sum = 0.;
       for (int k=0; k<mol[0].nindices; k++) { //intermediate state
         if (i==k) continue;
-        if (energies[i] != energies[k])
-          sum += coul.int3[i+k*mol[0].nindices]*coul.int3[k+j*mol[0].nindices]/(energies[i]-energies[k]);
-        else //CTC This is an appoximation!
-          sum += coul.int3[i+k*mol[0].nindices]*coul.int3[k+j*mol[0].nindices]/5;//(energies[i]-energies[k]);
-          
-          //Pring coupling elements
-          if (i==3 && j==5) {
-            cout<<"<"<<i<<"|V|"<<k<<"><"<<k<<"|V|"<<j<<"> = "
-            <<sum<<" "<<coul.int3[i+k*mol[0].nindices]<<" "<<coul.int3[k+j*mol[0].nindices]<<endl;
+        sum1=0.;
+        sum2=0.;
+        for (int a=0; a<mol[0].nindices; a++) {
+          for (int b=0; b<mol[0].nindices; b++) {
+            sum1 += coul.evecs3[a+i*mol[0].nindices]
+                    *coul.int3[a+b*mol[0].nindices]
+                    *coul.evecs3[b+k*mol[0].nindices];
           }
-        } //end intermediate state
-      res[i+j*mol[0].nindices] = sum*window(energies[i],energies[j],1,0);
-    } //end final state
-  } //end initial state
- for (int i=0; i<mol[0].nindices; i++)
-   for (int j=0; j<mol[0].nindices; j++) {
-      cout<<i<<" "<<j<<" "<<res[i+j*mol[0].nindices]<<"    <"<<i<<"|V|"<<j<<"> = "<<coul.int3[i+j*mol[0].nindices]<<endl;
-  }
+        }
+        for (int a=0; a<mol[0].nindices; a++) {
+          for (int b=0; b<mol[0].nindices; b++) {
+            sum2 += coul.evecs3[b+j*mol[0].nindices]
+                    *coul.int3[a+b*mol[0].nindices]
+                    *coul.evecs3[a+k*mol[0].nindices];
+          }
+        }
+        double en = coul.evals3[i] - coul.evals3[k];
+        sum += sum1*sum2/en;
+      }
+      intham[i+j*mol[0].nindices] = sum;
+    }//end final state
+  }//end initial state
 }
 
 void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum,double *intham, Reader r) {
@@ -261,17 +307,17 @@ void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
         
         //numerator += coul.int3[i+k*mol[0].nindices]*coul.int3[k+j*mol[0].nindices]/(coul.evals3[i]-coul.evals3[k]); 
         
-        numerator += sum1*sum2;//(coul.evals3[i]-coul.evals3[k]); //(sum3-sum4);
+        numerator += (sum1*sum2)/(sum3-sum4);//(coul.evals3[i]-coul.evals3[k]); //(sum3-sum4);
         denominator +=sum3-sum4;// coul.evals3[i] - coul.evals3[k];//sum3-sum4;
       //Pring coupling elements
-          if (i==1 && j==6) {
+          if (i==2 && j==0) {
             cout<<"<"<<i<<"|V|"<<k<<"><"<<k<<"|V|"<<j<<"> = "
-            <<numerator<<" "<<" "<<denominator<<" "<<numerator/denominator<<" "<<endl;
+            <<numerator<<" "<<" "<<denominator<<" "<<numerator/denominator<<" "<<sum1<<" "<<sum2<<" "<<sum3<<" "<<sum4<<endl;
           }
         }
       
 
-      res[i+j*mol[0].nindices] = numerator/denominator;
+      res[i+j*mol[0].nindices] = numerator;///denominator;
     }
   }
  
