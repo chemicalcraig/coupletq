@@ -76,10 +76,10 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
           mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,ham2,mol[0].nindices);
   //Make C.V.C^T
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
           mol[0].nindices,coul.int3,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
   
@@ -102,7 +102,8 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
       cout<<i<<" "<<j<<" hams "<<intham[i+j*mol[0].nindices]<<" "<<tildeint[i+j*mol[0].nindices]<<" "<<ham2[i+j*mol[0].nindices]<<" "<<ham[i+j*mol[0].nmol]<<endl;
     }
   }
-
+  
+  /** Convert ham back into energy basis **/
 //exit(0);
 
   //diagonalize full hamiltonian
@@ -134,15 +135,18 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   psire[1] = 1.;
   //psire[0] = 1/sqrt(2);
   //psire[3] = 1;
+  
+  /** indtoev transforms a vector from the energy basis to the eigenbasis of the
+   * full hamiltonian written in the basis of V **/
   double indtoev[mol[0].nindices*mol[0].nindices];
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,indtoev,mol[0].nindices);
 
 
   //double ham2[mol[0].nindices*mol[0].nindices],tempm[mol[0].nindices*mol[0].nindices],tempm2[mol[0].nindices*mol[0].nindices];
-  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,mol[0].nindices,1.,indtoev,mol[0].nindices,psire,1,0.,dpsire,1);
-  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,mol[0].nindices,1.,indtoev,mol[0].nindices,psiim,1,0.,dpsiim,1);
+  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,mol[0].nindices,1.,indtoev,mol[0].nindices,psire,1,0.,dpsire,1);
+  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,mol[0].nindices,1.,indtoev,mol[0].nindices,psiim,1,0.,dpsiim,1);
   
   //project onto selected state
   int state = 0;
@@ -211,6 +215,8 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
   double sum = 0.;
   double sum1=0.;
   double sum2=0.;
+  
+  cout<<"/** Second order corrections in eigenbasis of V **/"<<endl;
   for (int i=0; i<mol[0].nindices; i++) { //initial state
     for (int j=0; j<mol[0].nindices; j++) { //final state
       sum = 0.;
@@ -235,9 +241,27 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
         double en = coul.evals3[i] - coul.evals3[k];
         sum += sum1*sum2/en;
       }
+
+      cout<<i<<" "<<j<<" "<<sum<<endl;
       intham[i+j*mol[0].nindices] = sum;
     }//end final state
   }//end initial state
+
+  /** convert second order interaction into energy basis **/
+  double tempm[mol[0].nindices*mol[0].nindices];
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
+          mol[0].nindices,intham,mol[0].nindices,0,tempm,mol[0].nindices);
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
+          coul.evecs3,mol[0].nindices,0,intham,mol[0].nindices);
+cout<<"/** Second order correction in energy basis **/"<<endl;
+   for (int i=0; i<mol[0].nindices; i++) { //initial state
+    for (int j=0; j<mol[0].nindices; j++) { //final state
+      cout<<i<<" "<<j<<" "<<intham[i+j*mol[0].nindices]<<endl;
+    }
+   }
+exit(0);
 }
 
 void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum,double *intham, Reader r) {

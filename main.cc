@@ -116,13 +116,13 @@ int main(int argc, char **argv) {
   /** Filter Coulomb Matrix for energy conservation **/
   for (int i=0; i<nindex; i++) {
     for (int j=0; j<nindex; j++) {
+
+      coul.int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
       int3[i+j*nindex] = coul.int3[i+j*nindex];
-      if (i!=j) {
         //convert from au to eV
         //int3[i+j*nindex] *= 1.;
         //coul.int3[i+j*nindex] *= 1.;
-        //int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
-      }
+
       cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
     }
   }
@@ -144,6 +144,7 @@ int main(int argc, char **argv) {
   double sum = 0.;
   for (int i=0; i<nindex; i++) {
     sum = 0.;
+    cout<<"evals "<<i<<" "<<gsl_vector_get(eval,i)<<endl;
     coul.evals3[i] = gsl_vector_get(eval,i);
     //cout<<"evals "<<i<<" "<<coul.evals3[i]<<endl;
     for (int j=0; j<nindex; j++) {
