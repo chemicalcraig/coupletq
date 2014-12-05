@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
   }
   
   /** Get eigensystem of Coulomb matrix **/
-  gsl_matrix_view m = gsl_matrix_view_array(coul.int3,nindex,nindex);
+  gsl_matrix_view m = gsl_matrix_view_array(int3,nindex,nindex);
   gsl_vector *eval = gsl_vector_alloc(nindex);
   gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
   gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(nindex);
@@ -152,12 +152,15 @@ int main(int argc, char **argv) {
       cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*nindex]<<endl;
     }
   }
-double tildeint[64],tempm[64];
+
+/*double tildeint[64],tempm[64];
+double vec1[8];
+vec1[0] = 1;
 //Make C.V.C^T
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
           mol[0].nindices,coul.int3,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
  for (int i=0; i<mol[0].nindices; i++) {
@@ -166,8 +169,17 @@ double tildeint[64],tempm[64];
         <<tildeint[i+j*mol[0].nindices]<<endl;
     }
   }
+
+  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,
+          mol[0].nindices,1.,coul.evecs3,mol[0].nindices,vec1,1,0.,vec2,1);
+
+  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,
+          mol[0].nindices,1.,coul.evecs3,mol[0].nindices,vec2,1,0.,vec1,1);
+  for (int i=0; i<mol[0].nindices; i++) {
+   // cout<<i<<" transformed vec "<<vec1[i]<<endl;
+  }
  exit(0);
- 
+ */
 
 
 //CTC e

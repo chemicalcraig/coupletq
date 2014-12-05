@@ -69,10 +69,10 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   double tempm2[mol[0].nindices*mol[0].nindices];
   double tildeint[mol[0].nindices*mol[0].nindices];
 
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,coul.evecs3,mol[0].nindices,
           ham,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,ham2,mol[0].nindices);
   //Make C.V.C^T
