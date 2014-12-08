@@ -115,9 +115,10 @@ int main(int argc, char **argv) {
  
   /** Filter Coulomb Matrix for energy conservation **/
   for (int i=0; i<nindex; i++) {
+    //coul.int3[i+i*nindex] += energies[i];
     for (int j=0; j<nindex; j++) {
 
-      coul.int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
+      //coul.int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
       int3[i+j*nindex] = coul.int3[i+j*nindex];
         //convert from au to eV
         //int3[i+j*nindex] *= 1.;
@@ -125,6 +126,7 @@ int main(int argc, char **argv) {
 
       cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
     }
+    //coul.int3[i+i*nindex] -= energies[i];
   }
   
   /** Get eigensystem of Coulomb matrix **/
@@ -243,11 +245,11 @@ vec1[0] = 1;
       int whichaxis = 0;
       //pertCalcDegen(mol,coul,energies,int3,dum);
       //pertCalc(mol,coul,intham,energies);
-      gsl_matrix_view m = gsl_matrix_view_array(coul.int3,nindex,nindex);
-      gsl_vector *eval = gsl_vector_alloc(nindex);
-      gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
-      gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(nindex);
-      gsl_eigen_symmv(&m.matrix,eval,evec,w);
+      //gsl_matrix_view m = gsl_matrix_view_array(coul.int3,nindex,nindex);
+      //gsl_vector *eval = gsl_vector_alloc(nindex);
+      //gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
+      //gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(nindex);
+      //gsl_eigen_symmv(&m.matrix,eval,evec,w);
 
       for (int zi=0; zi<1; zi++) {
       //for (int zi=0; zi<mol[1].grid[whichaxis].ngrid; zi++) {
