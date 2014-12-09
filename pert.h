@@ -200,6 +200,8 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
   for (int i=0; i<mol[0].nindices; i++) { //initial state
     for (int j=0; j<mol[0].nindices; j++) { //final state
       sum = 0.;
+//CTC fix this, make sure sum1 is being reset in the correct location
+
       for (int k=0; k<mol[0].nindices; k++) { //intermediate state
         if (i==k)  continue;
         sum1=0.;
@@ -207,12 +209,14 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
           for (int b=0; b<mol[0].nindices; b++) {
             for (int c=0; c<mol[0].nindices; c++) {
               for (int d=0; d<mol[0].nindices; d++) {
-                sum1 += coul.evecs3[a+i*mol[0].nindices]
+                double dum = coul.evecs3[a+i*mol[0].nindices]
                     *coul.int3[a+b*mol[0].nindices]
                     *coul.evecs3[b+k*mol[0].nindices]
                     *coul.evecs3[c+k*mol[0].nindices]
                     *coul.int3[c+d*mol[0].nindices]
                     *coul.evecs3[d+j*mol[0].nindices];
+
+                sum1 += dum;
               }
             }
           }

@@ -98,20 +98,18 @@ int main(int argc, char **argv) {
     energies[i] = 0.;
     for (int m=0; m<mol[0].nmol; m++) {
       if (m==1 || m==2)
-        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]]*1.33;
+        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
       else
         energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
     }
     energies[0] = 0.;
 
-    //Convert to eV
-    //energies[i] *= 27.211396;
     cout<<"energies "<<i<<" "<<energies[i]<<endl;
   }
   
   /** Create unfiltered Coulomb matrix **/
   createCoulomb3(mol,coul);
-  createCoulomb3(mol,int3);
+  //createCoulomb3(mol,int3);
  
   /** Filter Coulomb Matrix for energy conservation **/
   for (int i=0; i<nindex; i++) {
@@ -120,13 +118,14 @@ int main(int argc, char **argv) {
 
       //coul.int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
       int3[i+j*nindex] = coul.int3[i+j*nindex];
+      int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
         //convert from au to eV
         //int3[i+j*nindex] *= 1.;
         //coul.int3[i+j*nindex] *= 1.;
 
       cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
     }
-    //coul.int3[i+i*nindex] -= energies[i];
+    int3[i+i*nindex] += energies[i];
   }
   
   /** Get eigensystem of Coulomb matrix **/
