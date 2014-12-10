@@ -80,8 +80,10 @@ int main(int argc, char **argv) {
   /** Set indicies matrix **/
   int nindex=1;
 
-  for (int i=0; i<read.calc.molecules; i++)
+  for (int i=0; i<read.calc.molecules; i++) {
     nindex *= mol[i].nstates;
+  }
+
   mol[0].nindices = nindex;
   setIndices(mol,mol[0].nmol,nindex);
   for (int i=0; i<nindex; i++) 
@@ -91,40 +93,42 @@ int main(int argc, char **argv) {
   /** Create Coulomb Matrix **/
   double temp[nindex*nindex],temp2[nindex*nindex];
   Coulomb coul(nindex);
- 
+  
+  cout<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
   /** Create state energy matrix **/
   double energies[nindex];
   for (int i=0; i<nindex; i++) {
     energies[i] = 0.;
     for (int m=0; m<mol[0].nmol; m++) {
       if (m==1 || m==2)
-        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]]*1.33;
+        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
       else
         energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
     }
     energies[0] = 0.;
 
-    //Convert to eV
-    //energies[i] *= 27.211396;
     cout<<"energies "<<i<<" "<<energies[i]<<endl;
   }
-  
+
   /** Create unfiltered Coulomb matrix **/
   createCoulomb3(mol,coul);
-  createCoulomb3(mol,int3);
+  //createCoulomb3(mol,int3);
  
   /** Filter Coulomb Matrix for energy conservation **/
   for (int i=0; i<nindex; i++) {
+    //coul.int3[i+i*nindex] += energies[i];
     for (int j=0; j<nindex; j++) {
 
-      coul.int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
+      //coul.int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
       int3[i+j*nindex] = coul.int3[i+j*nindex];
+      int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
         //convert from au to eV
         //int3[i+j*nindex] *= 1.;
         //coul.int3[i+j*nindex] *= 1.;
 
-      cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
+     // cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
     }
+    int3[i+i*nindex] += energies[i];
   }
   
   /** Get eigensystem of Coulomb matrix **/
@@ -243,11 +247,11 @@ vec1[0] = 1;
       int whichaxis = 0;
       //pertCalcDegen(mol,coul,energies,int3,dum);
       //pertCalc(mol,coul,intham,energies);
-      gsl_matrix_view m = gsl_matrix_view_array(coul.int3,nindex,nindex);
-      gsl_vector *eval = gsl_vector_alloc(nindex);
-      gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
-      gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(nindex);
-      gsl_eigen_symmv(&m.matrix,eval,evec,w);
+      //gsl_matrix_view m = gsl_matrix_view_array(coul.int3,nindex,nindex);
+      //gsl_vector *eval = gsl_vector_alloc(nindex);
+      //gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
+      //gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(nindex);
+      //gsl_eigen_symmv(&m.matrix,eval,evec,w);
 
       for (int zi=0; zi<1; zi++) {
       //for (int zi=0; zi<mol[1].grid[whichaxis].ngrid; zi++) {

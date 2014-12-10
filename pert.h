@@ -15,6 +15,7 @@
 #include <iomanip>
 #include "gsl/gsl_eigen.h"
 #include "gsl/gsl_blas.h"
+#include "gsl/gsl_complex.h"
 using namespace std;
 
 double project(Molecule *mol,int nmol, int state, const double *re, const double *im, const double *evecs) {
@@ -24,14 +25,17 @@ double project(Molecule *mol,int nmol, int state, const double *re, const double
   double vecim[mol[0].nindices];
 
   //convert psi to index-basis
-  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,re,1,0.,vecre,1);
-  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,im,1,0.,vecim,1);
+  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,
+      mol[0].nindices,1.,evecs,mol[0].nindices,re,1,0.,vecre,1);
+  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,
+      mol[0].nindices,1.,evecs,mol[0].nindices,im,1,0.,vecim,1);
 
   for (int i=0; i<mol[0].nindices; i++) {
     if (mol[0].indices[nmol+i*mol[0].nmol] == state) {
       sum += vecre[i]*vecre[i] + vecim[i]*vecim[i];
     }
   }
+
 
   return sum;
 }
@@ -44,78 +48,107 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   double *dpsiim = new double[mol[0].nindices];
   double ttime = tstart;
 
-  //construct full hamiltonian
-  double *ham, *diagham;
+  //construct zeroth order hamiltonian in site basis
+  double *ham;
   ham = new double[mol[0].nindices*mol[0].nindices];
-  diagham = new double[mol[0].nindices*mol[0].nindices];
   for (int i=0; i<mol[0].nindices*mol[0].nindices; i++)
     ham[i] = 0.;
+  
   for (int i=0; i<mol[0].nindices; i++) {
     ham[i+i*mol[0].nindices] = energies[i];
-  }
-  for (int i=0; i<mol[0].nindices; i++) {
-    for (int j=0; j<mol[0].nindices; j++) {
-     // ham[i+j*mol[0].nindices] += (intham[i+j*mol[0].nindices] 
-       //     + coul.int3[i+j*mol[0].nindices]);//*window(energies[i],energies[j],r.calc.ewindow,0);
-      /** Filter energies **/
-      //ham[i+j*mol[0].nindices] *= window(energies[i],energies[j],r.calc.ewindow,0);
-      cout<<i<<" "<<j<<" hams "<<intham[i+j*mol[0].nindices]<<" "<<coul.int3[i+j*mol[0].nindices]<<" "<<ham[i+j*mol[0].nindices]<<endl;
-    }
   }
 
   //Make C.ham.C^T=ham2
   double ham2[mol[0].nindices*mol[0].nindices];
   double tempm[mol[0].nindices*mol[0].nindices];
-  double tempm2[mol[0].nindices*mol[0].nindices];
   double tildeint[mol[0].nindices*mol[0].nindices];
-
-  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,coul.evecs3,mol[0].nindices,
           ham,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,ham2,mol[0].nindices);
   //Make C.V.C^T
-  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
           mol[0].nindices,coul.int3,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
   
-  for (int i=0; i<mol[0].nindices; i++) {
+   for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
-      cout<<i<<" "<<j<<" "<<tempm[i+j*mol[0].nindices]<<" "
-        <<tildeint[i+j*mol[0].nindices]<<" "<<ham2[i+j*mol[0].nindices]<<endl;
+     // cout<<i<<" "<<j<<" "<<ham2[i+j*mol[0].nindices]<<" "<<tildeint[i+j*mol[0].nindices]<<endl;
     }
   }
- 
- for (int i=0; i<mol[0].nindices*mol[0].nindices; i++)
+  //Zero out ham
+  for (int i=0; i<mol[0].nindices*mol[0].nindices; i++)
     ham[i] = 0.;
 
+  //Construct ham in |I> basis
   for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
       ham[i+j*mol[0].nindices] += ham2[i+j*mol[0].nindices] + intham[i+j*mol[0].nindices] 
             + tildeint[i+j*mol[0].nindices];
-      /** Filter energies **/
-      ham[i+j*mol[0].nindices] *= window(coul.evals3[i],coul.evals3[j],r.calc.ewindow,0);
-      cout<<i<<" "<<j<<" hams "<<intham[i+j*mol[0].nindices]<<" "<<tildeint[i+j*mol[0].nindices]<<" "<<ham2[i+j*mol[0].nindices]<<" "<<ham[i+j*mol[0].nmol]<<endl;
     }
   }
   
   /** Convert ham back into energy basis **/
-//exit(0);
-
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
+          mol[0].nindices,ham,mol[0].nindices,0,tempm,mol[0].nindices);
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
+          coul.evecs3,mol[0].nindices,0,ham2,mol[0].nindices);
+  
+  //Filter energies
+  for (int i=0; i<mol[0].nindices; i++) {
+    for (int j=0; j<mol[0].nindices; j++) {
+      ham2[i+j*mol[0].nindices] *= window(energies[i],energies[j],r.calc.ewindow,0);
+      cout<<i<<" "<<j<<" hams "<<intham[i+j*mol[0].nindices]<<" "<<tildeint[i+j*mol[0].nindices]<<" "<<ham2[i+j*mol[0].nindices]<<endl;//" "<<ham[i+j*mol[0].nmol]<<endl;
+    }
+  }
+ 
   //diagonalize full hamiltonian
-  //gsl_matrix_view m = gsl_matrix_view_array(ham2,mol[0].nindices,mol[0].nindices);
-  gsl_matrix_view m = gsl_matrix_view_array(ham,mol[0].nindices,mol[0].nindices);
+  gsl_matrix_view m = gsl_matrix_view_array(ham2,mol[0].nindices,mol[0].nindices); 
   gsl_vector *eval = gsl_vector_alloc(mol[0].nindices);
   gsl_matrix *evec = gsl_matrix_alloc(mol[0].nindices,mol[0].nindices);
   gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(mol[0].nindices);
   gsl_eigen_symmv(&m.matrix,eval,evec,w);
   gsl_eigen_symmv_free(w);
 
-  //coul.diagonalize(mol[0].nindices,coul.evecs3,coul.evals3,coul.int3);
+  
+  //CTC start complex
+/*  gsl_matrix_complex *m1 = gsl_matrix_complex_alloc(mol[0].nindices,mol[0].nindices);
+  for (int i=0; i<mol[0].nindices; i++) {
+      for (int j=0; j<mol[0].nindices; j++) {
+        //m1->data[i].dat[0] = m.matrix.data[i];
+        gsl_complex comp;
+        comp.dat[0] = gsl_matrix_get(&m.matrix,i,j);
+        gsl_matrix_complex_set(m1,i,j,comp);
+      }
+  }
+  gsl_vector_complex *evalc = gsl_vector_complex_alloc(mol[0].nindices);
+  gsl_matrix_complex *evec1 = gsl_matrix_complex_alloc(mol[0].nindices,mol[0].nindices);
+  gsl_eigen_nonsymmv_workspace *w = gsl_eigen_nonsymmv_alloc(mol[0].nindices);
+  gsl_eigen_nonsymmv_params(0,w);
+  gsl_eigen_nonsymmv(&m.matrix,evalc,evec1,w);
+  gsl_eigen_nonsymmv_free(w);
+  
+  for (int i=0; i<mol[0].nindices; i++) {
+    gsl_complex comp;
+    for (int j=0; j<mol[0].nindices; j++) {
+        //m1->data[i].dat[0] = m.matrix.data[i];
+        comp = gsl_matrix_complex_get(evec1,i,j);
+        cout<<"re,im part of ev_{"<<i<<","<<j<<"} = ("<<comp.dat[0]<<", "<<comp.dat[1]<<")"<<endl;
+        gsl_matrix_complex_set(m1,i,j,comp);
+        gsl_matrix_set(evec,i,j,comp.dat[0]);
+      }
+      comp = gsl_vector_complex_get(evalc,i);
+      gsl_vector_set(eval,i,comp.dat[0]);
+  }
+*/  //CTC end complex
+  
   double vec[mol[0].nindices],vec2[mol[0].nindices],evecs[mol[0].nindices*mol[0].nindices];
   for (int i=0; i<mol[0].nindices; i++) {
     cout<<"Full evals "<<gsl_vector_get(eval,i)<<endl;
@@ -135,24 +168,20 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   psire[1] = 1.;
   //psire[0] = 1/sqrt(2);
   //psire[3] = 1;
-  
-  /** indtoev transforms a vector from the energy basis to the eigenbasis of the
-   * full hamiltonian written in the basis of V **/
-  double indtoev[mol[0].nindices*mol[0].nindices];
-  cblas_dgemm(CblasColMajor,CblasTrans,CblasTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,evecs,mol[0].nindices,
-          coul.evecs3,mol[0].nindices,0,indtoev,mol[0].nindices);
 
+   cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,
+       mol[0].nindices,1.,evecs,mol[0].nindices,psire,1,0.,dpsire,1);
+  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,
+      mol[0].nindices,1.,evecs,mol[0].nindices,psiim,1,0.,dpsiim,1);
 
-  //double ham2[mol[0].nindices*mol[0].nindices],tempm[mol[0].nindices*mol[0].nindices],tempm2[mol[0].nindices*mol[0].nindices];
-  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,mol[0].nindices,1.,indtoev,mol[0].nindices,psire,1,0.,dpsire,1);
-  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,mol[0].nindices,1.,indtoev,mol[0].nindices,psiim,1,0.,dpsiim,1);
+  for (int i=0; i<mol[0].nindices; i++) {
+    cout<<"initial vector "<<i<<" "<<dpsire[i]<<" "<<dpsiim[i]<<endl;
+  }
   
   //project onto selected state
   int state = 0;
   int site = 0;
-
-  double population = project(mol,site,state,dpsire,dpsiim,indtoev);
+  double population;
   
   ofstream outfile;
   outfile.open("populations.dat");
@@ -175,7 +204,6 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   while (ttime < tfinish) {
 
     for (int i=0; i<mol[0].nindices; i++) {
-      //Convert to eV
       double ev = gsl_vector_get(eval,i);
       dpsire[i] = cos(ev*dtt/planck)*dpsire[i] + sin(ev*dtt/planck)*dpsiim[i];
       dpsiim[i] = cos(ev*dtt/planck)*dpsiim[i] - sin(ev*dtt/planck)*dpsire[i];
@@ -194,7 +222,7 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
       outfile<<ttime*.02418884326505<<" ";
       for (int m=0; m<mol[0].nmol; m++) {
         for (int st=0; st<mol[m].nstates; st++) {
-          outfile<<project(mol,m,st,dpsire,dpsiim,indtoev)<<" ";
+          outfile<<project(mol,m,st,dpsire,dpsiim,evecs)<<" ";
         }
       }
       outfile<<" "<<norm<<" "<<energy<<endl;
@@ -207,61 +235,42 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
 /** Perturbation Calculation in eigenbasis of the 3-bit 
  * Coulomb operator **/
 void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,double *intham) {
+  
   cout<<" *** in pertCalc, using eigenbasis of V *** "<<endl;
-  
-  double res[mol[0].nindices*mol[0].nindices];
-  
-  //Make diagonal hamiltonian with eigen energies on the diagonal
   double sum = 0.;
   double sum1=0.;
-  double sum2=0.;
   
   cout<<"/** Second order corrections in eigenbasis of V **/"<<endl;
   for (int i=0; i<mol[0].nindices; i++) { //initial state
     for (int j=0; j<mol[0].nindices; j++) { //final state
       sum = 0.;
+//CTC fix this, make sure sum1 is being reset in the correct location
+
       for (int k=0; k<mol[0].nindices; k++) { //intermediate state
-        if (i==k) continue;
+        if (i==k)  continue;
         sum1=0.;
-        sum2=0.;
         for (int a=0; a<mol[0].nindices; a++) {
           for (int b=0; b<mol[0].nindices; b++) {
-            sum1 += coul.evecs3[a+i*mol[0].nindices]
+            for (int c=0; c<mol[0].nindices; c++) {
+              for (int d=0; d<mol[0].nindices; d++) {
+                double dum = coul.evecs3[a+i*mol[0].nindices]
                     *coul.int3[a+b*mol[0].nindices]
-                    *coul.evecs3[b+k*mol[0].nindices];
-          }
-        }
-        for (int a=0; a<mol[0].nindices; a++) {
-          for (int b=0; b<mol[0].nindices; b++) {
-            sum2 += coul.evecs3[b+j*mol[0].nindices]
-                    *coul.int3[a+b*mol[0].nindices]
-                    *coul.evecs3[a+k*mol[0].nindices];
+                    *coul.evecs3[b+k*mol[0].nindices]
+                    *coul.evecs3[c+k*mol[0].nindices]
+                    *coul.int3[c+d*mol[0].nindices]
+                    *coul.evecs3[d+j*mol[0].nindices];
+
+                sum1 += dum;
+              }
+            }
           }
         }
         double en = coul.evals3[i] - coul.evals3[k];
-        sum += sum1*sum2/en;
+        sum += sum1/en;
       }
-
-      cout<<i<<" "<<j<<" "<<sum<<endl;
       intham[i+j*mol[0].nindices] = sum;
     }//end final state
   }//end initial state
-
-  /** convert second order interaction into energy basis **/
-  double tempm[mol[0].nindices*mol[0].nindices];
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
-          mol[0].nindices,intham,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
-          coul.evecs3,mol[0].nindices,0,intham,mol[0].nindices);
-cout<<"/** Second order correction in energy basis **/"<<endl;
-   for (int i=0; i<mol[0].nindices; i++) { //initial state
-    for (int j=0; j<mol[0].nindices; j++) { //final state
-      cout<<i<<" "<<j<<" "<<intham[i+j*mol[0].nindices]<<endl;
-    }
-   }
-exit(0);
 }
 
 void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum,double *intham, Reader r) {
