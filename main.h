@@ -40,6 +40,6 @@ Molecule *mol;
 double coupling;
 
 //Second order interaction matrix in 3-bit eigenbasis
-double intham[64];
-double int3[64];
+double *intham;
+double *int3;
 #endif // MAIN_H

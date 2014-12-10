@@ -83,6 +83,8 @@ int main(int argc, char **argv) {
   for (int i=0; i<read.calc.molecules; i++) {
     nindex *= mol[i].nstates;
   }
+  int3 = new double[nindex*nindex];
+  intham = new double[nindex*nindex];
 
   mol[0].nindices = nindex;
   setIndices(mol,mol[0].nmol,nindex);
@@ -94,14 +96,15 @@ int main(int argc, char **argv) {
   double temp[nindex*nindex],temp2[nindex*nindex];
   Coulomb coul(nindex);
   
-  cout<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
+
+  cout<<98<<" "<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
   /** Create state energy matrix **/
   double energies[nindex];
   for (int i=0; i<nindex; i++) {
     energies[i] = 0.;
     for (int m=0; m<mol[0].nmol; m++) {
-      if (m==1 || m==2)
-        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
+      if (m!=0)
+        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]]*1.33;
       else
         energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
     }
@@ -110,23 +113,19 @@ int main(int argc, char **argv) {
     cout<<"energies "<<i<<" "<<energies[i]<<endl;
   }
 
+  cout<<114<<" "<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
   /** Create unfiltered Coulomb matrix **/
   createCoulomb3(mol,coul);
   //createCoulomb3(mol,int3);
  
+  cout<<119<<" "<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
   /** Filter Coulomb Matrix for energy conservation **/
   for (int i=0; i<nindex; i++) {
     //coul.int3[i+i*nindex] += energies[i];
     for (int j=0; j<nindex; j++) {
-
-      //coul.int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
       int3[i+j*nindex] = coul.int3[i+j*nindex];
       int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
-        //convert from au to eV
-        //int3[i+j*nindex] *= 1.;
-        //coul.int3[i+j*nindex] *= 1.;
-
-     // cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
+      //cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
     }
     int3[i+i*nindex] += energies[i];
   }
@@ -255,7 +254,10 @@ vec1[0] = 1;
 
       for (int zi=0; zi<1; zi++) {
       //for (int zi=0; zi<mol[1].grid[whichaxis].ngrid; zi++) {
+        
+  cout<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
         pertCalcEigen(mol,coul,energies,int3,intham);
+        cout<<259<<endl;
         //pertCalcDegen(mol,coul,energies,int3,dum,intham,read);
         propagateTime(mol,coul,energies,0,80000,0.000001,intham,read);
 

@@ -241,13 +241,14 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
   double sum1=0.;
   
   cout<<"/** Second order corrections in eigenbasis of V **/"<<endl;
+  cout<<244<<endl;
+  cout<<mol[0].nindices<<endl;
   for (int i=0; i<mol[0].nindices; i++) { //initial state
     for (int j=0; j<mol[0].nindices; j++) { //final state
       sum = 0.;
-//CTC fix this, make sure sum1 is being reset in the correct location
-
       for (int k=0; k<mol[0].nindices; k++) { //intermediate state
         if (i==k)  continue;
+        cout<<i<<" "<<j<<" "<<mol[0].nindices<<endl;
         sum1=0.;
         for (int a=0; a<mol[0].nindices; a++) {
           for (int b=0; b<mol[0].nindices; b++) {
