@@ -78,6 +78,7 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   
    for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
+     intham[i+j*mol[0].nindices] *= window(coul.evals3[i],coul.evals3[j],r.calc.ewindow,0);
      // cout<<i<<" "<<j<<" "<<ham2[i+j*mol[0].nindices]<<" "<<tildeint[i+j*mol[0].nindices]<<endl;
     }
   }
@@ -183,9 +184,11 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   int site = 0;
   double population;
   
-  ofstream outfile;
+  ofstream outfile,outfile2;
   outfile.open("populations.dat");
+  outfile2.open("evpops.dat");
   outfile.precision(16);
+  outfile2.precision(16);
   
   //propagate wavefunction in time
   double initenergy = 0.;
@@ -220,12 +223,20 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
       }
 
       outfile<<ttime*.02418884326505<<" ";
+      outfile2<<ttime*.02418884326505<<" ";
       for (int m=0; m<mol[0].nmol; m++) {
         for (int st=0; st<mol[m].nstates; st++) {
           outfile<<project(mol,m,st,dpsire,dpsiim,evecs)<<" ";
         }
       }
       outfile<<" "<<norm<<" "<<energy<<endl;
+
+      /** Write eigen state populations **/
+      for (int m=0; m<mol[0].nindices; m++) {
+        double dum = (dpsire[m]*dpsire[m]+dpsiim[m]*dpsiim[m]);
+        outfile2<<dum<<" ";
+      }
+      outfile2<<endl;
     }
     ttime += dtt;
     counter ++;
