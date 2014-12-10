@@ -80,8 +80,10 @@ int main(int argc, char **argv) {
   /** Set indicies matrix **/
   int nindex=1;
 
-  for (int i=0; i<read.calc.molecules; i++)
+  for (int i=0; i<read.calc.molecules; i++) {
     nindex *= mol[i].nstates;
+  }
+
   mol[0].nindices = nindex;
   setIndices(mol,mol[0].nmol,nindex);
   for (int i=0; i<nindex; i++) 
@@ -91,7 +93,8 @@ int main(int argc, char **argv) {
   /** Create Coulomb Matrix **/
   double temp[nindex*nindex],temp2[nindex*nindex];
   Coulomb coul(nindex);
- 
+  
+  cout<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
   /** Create state energy matrix **/
   double energies[nindex];
   for (int i=0; i<nindex; i++) {
@@ -106,7 +109,7 @@ int main(int argc, char **argv) {
 
     cout<<"energies "<<i<<" "<<energies[i]<<endl;
   }
-  
+
   /** Create unfiltered Coulomb matrix **/
   createCoulomb3(mol,coul);
   //createCoulomb3(mol,int3);
@@ -123,7 +126,7 @@ int main(int argc, char **argv) {
         //int3[i+j*nindex] *= 1.;
         //coul.int3[i+j*nindex] *= 1.;
 
-      cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
+     // cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
     }
     int3[i+i*nindex] += energies[i];
   }

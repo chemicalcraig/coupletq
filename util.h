@@ -102,11 +102,12 @@ void createCoulomb3(Molecule *mol, Coulomb coul) {
             if ((k==m1) || (k==m2)) continue;
             kron *= Kronecker(mol[0].indices[k+i*mol[0].nmol],mol[0].indices[k+j*mol[0].nmol]);
           }
-          coul.int3[i+j*mol[0].nindices] += getCoulomb(mol,m1,m2,
+          double dum = getCoulomb(mol,m1,m2,
                                mol[0].indices[m1+i*mol[0].nmol],
                                mol[0].indices[m1+j*mol[0].nmol],
                                mol[0].indices[m2+i*mol[0].nmol],
-                               mol[0].indices[m2+j*mol[0].nmol])*kron;
+                               mol[0].indices[m2+j*mol[0].nmol]);
+          coul.int3[i+j*mol[0].nindices] += dum*kron;
         }//end molecule 2
       }//end molecule 1
       //adjust for over counting
@@ -383,7 +384,7 @@ int findRow(int x, const int rowrange, const int colrange) {
         return i;
 }
 
-/** indices from index, hard-coded for now **/
+/** indices from index, hard-coded for up to 7 molecules for now **/
 int *indicesFromIndex(const int ind, Molecule *mol) {
   int *a;
   a=new int[mol[0].nmol];
@@ -444,6 +445,55 @@ int *indicesFromIndex(const int ind, Molecule *mol) {
                   a[3] = l;
                   a[4] = m;
                   return a;
+                }
+              }
+      break;
+    case 6:
+      for (int i=0; i<mol[0].nstates; i++)
+        for (int j=0; j<mol[1].nstates; j++) 
+          for (int k=0; k<mol[2].nstates; k++) 
+            for (int l=0; l<mol[3].nstates; l++) 
+              for (int m=0; m<mol[4].nstates; m++) 
+                for (int n=0; n<mol[5].nstates; n++) {
+                  int x = i + j*mol[0].nstates + k*mol[0].nstates*mol[1].nstates 
+                      + l*mol[0].nstates*mol[1].nstates*mol[2].nstates
+                      + m*mol[0].nstates*mol[1].nstates*mol[2].nstates*mol[3].nstates
+                      + n*mol[0].nstates*mol[1].nstates*mol[2].nstates*mol[3].nstates*mol[4].nstates;
+                  if (x == ind) {
+                    a[0] = i;
+                    a[1] = j;
+                    a[2] = k;
+                    a[3] = l;
+                    a[4] = m;
+                    a[5] = n;
+                    return a;
+                }
+              }
+      break;
+    case 7:
+      for (int i=0; i<mol[0].nstates; i++)
+        for (int j=0; j<mol[1].nstates; j++) 
+          for (int k=0; k<mol[2].nstates; k++) 
+            for (int l=0; l<mol[3].nstates; l++) 
+              for (int m=0; m<mol[4].nstates; m++) 
+                for (int n=0; n<mol[5].nstates; n++) 
+                  for (int o=0; o<mol[6].nstates; o++) {
+                  int x = i + j*mol[0].nstates + k*mol[0].nstates*mol[1].nstates 
+                      + l*mol[0].nstates*mol[1].nstates*mol[2].nstates
+                      + m*mol[0].nstates*mol[1].nstates*mol[2].nstates*mol[3].nstates
+                      + n*mol[0].nstates*mol[1].nstates*mol[2].nstates*mol[3].nstates*mol[4].nstates
+                      
+                      + o*mol[0].nstates*mol[1].nstates*mol[2].nstates*mol[3].nstates
+                            *mol[4].nstates*mol[5].nstates;
+                  if (x == ind) {
+                    a[0] = i;
+                    a[1] = j;
+                    a[2] = k;
+                    a[3] = l;
+                    a[4] = m;
+                    a[5] = n;
+                    a[6] = o;
+                    return a;
                 }
               }
       break;
