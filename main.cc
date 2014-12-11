@@ -123,6 +123,8 @@ int main(int argc, char **argv) {
   for (int i=0; i<nindex; i++) {
     //coul.int3[i+i*nindex] += energies[i];
     for (int j=0; j<nindex; j++) {
+      
+      //coul.int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
       int3[i+j*nindex] = coul.int3[i+j*nindex];
       int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
       //cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
@@ -156,9 +158,9 @@ int main(int argc, char **argv) {
       cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*nindex]<<endl;
     }
   }
-
-/*double tildeint[64],tempm[64];
-double vec1[8];
+/*
+double tildeint[nindex*nindex],tempm[nindex*nindex];
+double vec1[nindex];
 vec1[0] = 1;
 //Make C.V.C^T
   cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
@@ -183,7 +185,7 @@ vec1[0] = 1;
    // cout<<i<<" transformed vec "<<vec1[i]<<endl;
   }
  exit(0);
- */
+ 
 
 
 //CTC e

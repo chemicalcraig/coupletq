@@ -56,62 +56,83 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   
   for (int i=0; i<mol[0].nindices; i++) {
     ham[i+i*mol[0].nindices] = energies[i];
+    for (int j=0; j<mol[0].nindices; j++) {
+      coul.int3[i+j*mol[0].nindices] *= window(energies[i],energies[j],r.calc.ewindow,0);
+    }
   }
+
 
   //Make C.ham.C^T=ham2
   double ham2[mol[0].nindices*mol[0].nindices];
   double tempm[mol[0].nindices*mol[0].nindices];
   double tildeint[mol[0].nindices*mol[0].nindices];
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+/*  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,coul.evecs3,mol[0].nindices,
           ham,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,ham2,mol[0].nindices);
   //Make C.V.C^T
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
           mol[0].nindices,coul.int3,mol[0].nindices,0,tempm,mol[0].nindices);
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
+          coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
+  */
+   /** convert W into site basis **/
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
+          mol[0].nindices,intham,mol[0].nindices,0,tempm,mol[0].nindices);
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
   
+
+   
    for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
-     intham[i+j*mol[0].nindices] *= window(coul.evals3[i],coul.evals3[j],r.calc.ewindow,0);
-     // cout<<i<<" "<<j<<" "<<ham2[i+j*mol[0].nindices]<<" "<<tildeint[i+j*mol[0].nindices]<<endl;
+     //intham[i+j*mol[0].nindices] *= window(coul.evals3[i],coul.evals3[j],r.calc.ewindow,0);
+      tildeint[i+j*mol[0].nindices] *= window(energies[i],energies[j],r.calc.ewindow,0);
     }
   }
+  //exit(0);
   //Zero out ham
   for (int i=0; i<mol[0].nindices*mol[0].nindices; i++)
     ham[i] = 0.;
+    
+  for (int i=0; i<mol[0].nindices; i++) 
+      ham[i+i*mol[0].nindices] = energies[i];
 
   //Construct ham in |I> basis
   for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
-      ham[i+j*mol[0].nindices] += ham2[i+j*mol[0].nindices] + intham[i+j*mol[0].nindices] 
-            + tildeint[i+j*mol[0].nindices];
+      //ham[i+j*mol[0].nindices] += ham2[i+j*mol[0].nindices] + intham[i+j*mol[0].nindices] 
+        //    + tildeint[i+j*mol[0].nindices];
+      ham[i+j*mol[0].nindices] += coul.int3[i+j*mol[0].nindices] + tildeint[i+j*mol[0].nindices];
     }
   }
   
   /** Convert ham back into energy basis **/
-  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
+/*  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
           mol[0].nindices,ham,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
+  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,ham2,mol[0].nindices);
-  
+*/  
   //Filter energies
   for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
-      ham2[i+j*mol[0].nindices] *= window(energies[i],energies[j],r.calc.ewindow,0);
-      cout<<i<<" "<<j<<" hams "<<intham[i+j*mol[0].nindices]<<" "<<tildeint[i+j*mol[0].nindices]<<" "<<ham2[i+j*mol[0].nindices]<<endl;//" "<<ham[i+j*mol[0].nmol]<<endl;
+      //ham2[i+j*mol[0].nindices] *= window(energies[i],energies[j],r.calc.ewindow,0);
+      cout<<i<<" "<<j<<" hams "<<tildeint[i+j*mol[0].nindices]<<" "
+          <<tildeint[i+j*mol[0].nindices]<<" "
+          <<ham2[i+j*mol[0].nindices]<<" "<<ham[i+j*mol[0].nmol]<<endl;
     }
   }
  
   //diagonalize full hamiltonian
-  gsl_matrix_view m = gsl_matrix_view_array(ham2,mol[0].nindices,mol[0].nindices); 
+  gsl_matrix_view m = gsl_matrix_view_array(ham,mol[0].nindices,mol[0].nindices); 
   gsl_vector *eval = gsl_vector_alloc(mol[0].nindices);
   gsl_matrix *evec = gsl_matrix_alloc(mol[0].nindices,mol[0].nindices);
   gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(mol[0].nindices);
