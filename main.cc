@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
     energies[i] = 0.;
     for (int m=0; m<mol[0].nmol; m++) {
       if (m!=0)
-        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]]*1.33;
+        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]]*1;
       else
         energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
     }
@@ -259,11 +259,12 @@ vec1[0] = 1;
         
   cout<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
         pertCalcEigen(mol,coul,energies,int3,intham);
-        cout<<259<<endl;
         //pertCalcDegen(mol,coul,energies,int3,dum,intham,read);
-        propagateTime(mol,coul,energies,0,80000,0.000001,intham,read);
+        propagateTime(mol,coul,energies,0,80000,1.e-7,intham,read);
 
         exit(0);
+ 
+ 
         print.appendData2d(outfile2,mol[1].grid[whichaxis].min+zi*mol[1].grid[whichaxis].dgrid,dum);
         mol[1].translate(whichaxis,mol[1].grid[whichaxis].dgrid);
         

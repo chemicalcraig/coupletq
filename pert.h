@@ -233,7 +233,7 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
       dpsiim[i] = cos(ev*dtt/planck)*dpsiim[i] - sin(ev*dtt/planck)*dpsire[i];
     }
 
-    if (counter%10000 == 0) {
+    if (counter%1000000 == 0) {
       population = project(mol,0,1,dpsire,dpsiim,evecs);
       cout<<"population of donor excited state = "<<population<<endl;
       double energy = 0.;
