@@ -126,8 +126,7 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
     for (int j=0; j<mol[0].nindices; j++) {
       //ham2[i+j*mol[0].nindices] *= window(energies[i],energies[j],r.calc.ewindow,0);
       cout<<i<<" "<<j<<" hams "<<tildeint[i+j*mol[0].nindices]<<" "
-          <<tildeint[i+j*mol[0].nindices]<<" "
-          <<ham2[i+j*mol[0].nindices]<<" "<<ham[i+j*mol[0].nmol]<<endl;
+          <<ham2[i+j*mol[0].nindices]<<" "<<ham[i+j*mol[0].nindices]<<endl;
     }
   }
  
@@ -233,7 +232,7 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
       dpsiim[i] = cos(ev*dtt/planck)*dpsiim[i] - sin(ev*dtt/planck)*dpsire[i];
     }
 
-    if (counter%1000000 == 0) {
+    if (counter%100000 == 0) {
       population = project(mol,0,1,dpsire,dpsiim,evecs);
       cout<<"population of donor excited state = "<<population<<endl;
       double energy = 0.;

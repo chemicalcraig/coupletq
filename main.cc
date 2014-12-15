@@ -260,7 +260,7 @@ vec1[0] = 1;
   cout<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
         pertCalcEigen(mol,coul,energies,int3,intham);
         //pertCalcDegen(mol,coul,energies,int3,dum,intham,read);
-        propagateTime(mol,coul,energies,0,80000,1.e-7,intham,read);
+        propagateTime(mol,coul,energies,0,80000,1.e-6,intham,read);
 
         exit(0);
  
