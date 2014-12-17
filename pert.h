@@ -42,6 +42,11 @@ double project(Molecule *mol,int nmol, int state, const double *re, const double
 
 void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart, double tfinish,
                   double dtt, double *intham, Reader r) {
+  /** Convert time parameters from fs to au **/
+  tstart /= .02418884326505;
+  tfinish /= .02418884326505;
+  dtt /= .02418884326505;
+  
   double *psire = new double[mol[0].nindices];
   double *psiim = new double[mol[0].nindices];
   double *dpsire = new double[mol[0].nindices];
@@ -61,42 +66,24 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
     }
   }
 
-
-  //Make C.ham.C^T=ham2
   double ham2[mol[0].nindices*mol[0].nindices];
   double tempm[mol[0].nindices*mol[0].nindices];
   double tildeint[mol[0].nindices*mol[0].nindices];
-/*  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,mol[0].nindices,
-          ham,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
-          coul.evecs3,mol[0].nindices,0,ham2,mol[0].nindices);
-  //Make C.V.C^T
-  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
-          mol[0].nindices,coul.int3,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
-          coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
-  */
-   /** convert W into site basis **/
+  
+  /** convert W into site basis **/
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
           mol[0].nindices,intham,mol[0].nindices,0,tempm,mol[0].nindices);
   cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
           mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
           coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
-  
-
    
    for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
-     //intham[i+j*mol[0].nindices] *= window(coul.evals3[i],coul.evals3[j],r.calc.ewindow,0);
       tildeint[i+j*mol[0].nindices] *= window(energies[i],energies[j],r.calc.ewindow,0);
     }
   }
-  //exit(0);
+  
   //Zero out ham
   for (int i=0; i<mol[0].nindices*mol[0].nindices; i++)
     ham[i] = 0.;
@@ -107,26 +94,15 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   //Construct ham in |I> basis
   for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
-      //ham[i+j*mol[0].nindices] += ham2[i+j*mol[0].nindices] + intham[i+j*mol[0].nindices] 
-        //    + tildeint[i+j*mol[0].nindices];
       ham[i+j*mol[0].nindices] += coul.int3[i+j*mol[0].nindices] + tildeint[i+j*mol[0].nindices];
     }
   }
   
-  /** Convert ham back into energy basis **/
-/*  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
-          mol[0].nindices,ham,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
-          coul.evecs3,mol[0].nindices,0,ham2,mol[0].nindices);
-*/  
   //Filter energies
   for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
-      //ham2[i+j*mol[0].nindices] *= window(energies[i],energies[j],r.calc.ewindow,0);
-      cout<<i<<" "<<j<<" hams "<<tildeint[i+j*mol[0].nindices]<<" "
-          <<ham2[i+j*mol[0].nindices]<<" "<<ham[i+j*mol[0].nindices]<<endl;
+      cout<<i<<" "<<j<<" hams "<<tildeint[i+j*mol[0].nindices]
+            <<" "<<ham[i+j*mol[0].nindices]<<endl;
     }
   }
  
@@ -205,7 +181,7 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   double population;
   
   ofstream outfile,outfile2;
-  outfile.open("populations.dat");
+  outfile.open(r.dyn.out[0].file.c_str());
   outfile2.open("evpops.dat");
   outfile.precision(16);
   outfile2.precision(16);
@@ -232,9 +208,9 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
       dpsiim[i] = cos(ev*dtt/planck)*dpsiim[i] - sin(ev*dtt/planck)*dpsire[i];
     }
 
-    if (counter%100000 == 0) {
+    /** Write stuff **/
+    if (counter%r.dyn.wstep == 0) {
       population = project(mol,0,1,dpsire,dpsiim,evecs);
-      cout<<"population of donor excited state = "<<population<<endl;
       double energy = 0.;
       norm = 0.;
       for (int i=0; i<mol[0].nindices; i++) {
@@ -244,23 +220,35 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
 
       outfile<<ttime*.02418884326505<<" ";
       outfile2<<ttime*.02418884326505<<" ";
-      for (int m=0; m<mol[0].nmol; m++) {
-        for (int st=0; st<mol[m].nstates; st++) {
-          outfile<<project(mol,m,st,dpsire,dpsiim,evecs)<<" ";
-        }
-      }
-      outfile<<" "<<norm<<" "<<energy<<endl;
 
+      if (r.dyn.printAll) {
+        for (int m=0; m<mol[0].nmol; m++) {
+          for (int st=0; st<mol[m].nstates; st++) {
+            outfile<<project(mol,m,st,dpsire,dpsiim,evecs)<<" ";
+          }
+        }
+        outfile<<" "<<norm<<" "<<energy<<endl;
+      } else {
+        for (int m=0; m<r.dyn.noutput; m++) {
+          outfile<<project(mol,r.dyn.out[m].mol,r.dyn.out[m].state,
+                          dpsire,dpsiim,evecs)<<" ";
+        }
+        outfile<<" "<<norm<<" "<<energy<<endl;
+      }
+      
       /** Write eigen state populations **/
-      for (int m=0; m<mol[0].nindices; m++) {
+    /*  for (int m=0; m<mol[0].nindices; m++) {
         double dum = (dpsire[m]*dpsire[m]+dpsiim[m]*dpsiim[m]);
         outfile2<<dum<<" ";
       }
       outfile2<<endl;
+    */
     }
     ttime += dtt;
     counter ++;
   }
+  outfile.close();
+  outfile2.close();
 }
 
 /** Perturbation Calculation in eigenbasis of the 3-bit 
@@ -272,14 +260,11 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
   double sum1=0.;
   
   cout<<"/** Second order corrections in eigenbasis of V **/"<<endl;
-  cout<<244<<endl;
-  cout<<mol[0].nindices<<endl;
   for (int i=0; i<mol[0].nindices; i++) { //initial state
     for (int j=0; j<mol[0].nindices; j++) { //final state
       sum = 0.;
       for (int k=0; k<mol[0].nindices; k++) { //intermediate state
         if (i==k)  continue;
-        cout<<i<<" "<<j<<" "<<mol[0].nindices<<endl;
         sum1=0.;
         for (int a=0; a<mol[0].nindices; a++) {
           for (int b=0; b<mol[0].nindices; b++) {

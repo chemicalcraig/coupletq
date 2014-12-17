@@ -1,4 +1,5 @@
 #include "reader.h"
+#include "math.h"
 #include <cstdlib>
 #include <list>
 #include <algorithm>
@@ -20,7 +21,7 @@ const string subdirs_[] = {"charges","Charges","CHARGES",
                          "output","Output","OUTPUT"};
 const string opts_[] = {"type","ewindow","molecules","states","charges",
                            "move","rotate","tddft","start","finish","steps",
-                           "increment","init","output","populations","file"};
+                           "increment","init","output","populations","wincrement","file"};
 list<string> directives_(dirs_, dirs_+sizeof(dirs_)/sizeof(string));
 list<string> subdirectives_(subdirs_, subdirs_+sizeof(subdirs_)/sizeof(string));
 list<string> options_(opts_, opts_+sizeof(opts_)/sizeof(string));
@@ -125,6 +126,9 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
             dyn.tsteps = atoi(s.c_str());
           } else if (string(*it).compare(0,9,"increment",0,9)==0) {
             dyn.increment = atof(s.c_str());
+          } else if (string(*it).compare(0,10,"wincrement",0,10)==0) {
+            double dum = atof(s.c_str());
+            dyn.wstep = (int)(ceil(dum/dyn.increment));
           }
         }
       }
@@ -144,7 +148,6 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
     /** charges **/
     if (s1.compare(0,7,"charges",0,7) == 0) {
       int n=-1;
-      cout<<"in charges "<<147<<endl;
       while(s.compare(0,3,"end",0,3)!=0) {
         in>>ws;
         in.getline(c,1000);
@@ -249,6 +252,8 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
     /** output **/
     if (s1.compare(0,6,"output",0,6) == 0) {
       int n=-1;
+      dyn.popSet = false;
+      dyn.printAll = true;
       while(s.compare(0,3,"end",0,3)!=0) {
         in>>ws;
         int pos2 = in.tellg();
@@ -257,26 +262,50 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
         pos=in.tellg(); 
         char *c2 = c;
         if (s.compare(0,10,"populations",0,10)==0){
+          dyn.popSet = true;
           char *cs;
           cs=strtok(c2," ");
           while(cs!=NULL) {
             cs=strtok(NULL," ");
             n++;
           }
+          dyn.noutput = n;
           dyn.out = new Output[n];
           c2 = const_cast<char*>(s.c_str());
           s=strtok(c2," ");
           //s=strtok(NULL," ");
-          for (int i=0; i<n; i++) {
-            s=strtok(NULL," (,");
-            dyn.out[i].mol = atoi(s.c_str());
-            s=strtok(NULL,")");
-            dyn.out[i].state = atoi(s.c_str());
+          if (n > 0) {
+            for (int i=0; i<n; i++) {
+              s=strtok(NULL," (,");
+              cout<<s<<endl;
+              if (s.compare(0,3,"all",0,3)!=0) {
+                dyn.printAll = false;
+              } else {
+                cout<<"printing all populations"<<endl;
+                continue;
+              }
+              dyn.out[i].mol = atoi(s.c_str());
+              s=strtok(NULL,")");
+              dyn.out[i].state = atoi(s.c_str());
+            }
+          
+            //in.getline(c,1000);
+            //s=strtok(c," ");
+            //dyn.out[0].file = s;
+          } else { 
+            dyn.out = new Output[1];
           }
-          in.getline(c,1000);
+        } //end populations
+
+        if (s.compare(0,4,"file",0,4)==0) {
+          if (!dyn.popSet) {
+            dyn.out = new Output[1];
+          }
+          c2 = const_cast<char*>(s.c_str());
           s=strtok(c," ");
+          s=strtok(NULL," ");
           dyn.out[0].file = s;
-        } //end output
+        } //end file name
       }
     } //end output
   } //end mol block

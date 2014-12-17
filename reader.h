@@ -69,10 +69,12 @@ struct Mol{
 
 struct Dyn{
   /** Dynamics Stack **/
-  double tstart,tfinish,increment;
-  int tsteps;
+  double tstart,tfinish,increment,winc;
+  int tsteps,wstep;
+  int noutput;
   InitPop *pop;
   Output *out;
+  bool popSet,printAll;
 };
 
 struct Fret{

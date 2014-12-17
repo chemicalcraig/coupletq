@@ -14,6 +14,18 @@
 
 int main(int argc, char **argv) {
   
+  /** echo input file **/
+  ifstream efile;
+  efile.open(argv[1]);
+  char tmpc[1000];
+  cout<<"*** Start Input file ***"<<endl;
+  while (!efile.eof()) {
+    efile.getline(tmpc,1000);
+    cout<<tmpc<<endl;
+  }
+  efile.close();
+  cout<<"*** End Input File ***"<<endl;
+  
   /** Read input com file **/
   Reader read(argv[1]);
   mol = initialize(read);
@@ -260,7 +272,8 @@ vec1[0] = 1;
   cout<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
         pertCalcEigen(mol,coul,energies,int3,intham);
         //pertCalcDegen(mol,coul,energies,int3,dum,intham,read);
-        propagateTime(mol,coul,energies,0,80000,1.e-6,intham,read);
+        propagateTime(mol,coul,energies,read.dyn.tstart,
+                      read.dyn.tfinish,read.dyn.increment,intham,read);
 
         exit(0);
  
