@@ -35,15 +35,6 @@ int main(int argc, char **argv) {
     mol[i].setCom();
   }
 
-  /** scale state charges for pmi, nelec=174 **/
-  for (int i=0; i<mol[0].nmol; i++) {
-    for (int j=0; j<mol[i].natoms; j++) {
-      for (int k=0; k<mol[i].nstates; k++) {
-        mol[i].atoms[j].charges[k+k*mol[i].nstates] *= 1;//74;
-      }
-    }
-  }
-  
   /** set up printer and output files **/
   Print print(mol);
   ofstream outfile2,pdafile;
@@ -108,8 +99,6 @@ int main(int argc, char **argv) {
   double temp[nindex*nindex],temp2[nindex*nindex];
   Coulomb coul(nindex);
   
-
-  cout<<98<<" "<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
   /** Create state energy matrix **/
   double energies[nindex];
   for (int i=0; i<nindex; i++) {
@@ -125,12 +114,10 @@ int main(int argc, char **argv) {
     cout<<"energies "<<i<<" "<<energies[i]<<endl;
   }
 
-  cout<<114<<" "<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
   /** Create unfiltered Coulomb matrix **/
   createCoulomb3(mol,coul);
   //createCoulomb3(mol,int3);
  
-  cout<<119<<" "<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
   /** Filter Coulomb Matrix for energy conservation **/
   for (int i=0; i<nindex; i++) {
     //coul.int3[i+i*nindex] += energies[i];
@@ -152,10 +139,6 @@ int main(int argc, char **argv) {
   gsl_eigen_symmv(&m.matrix,eval,evec,w);
   gsl_eigen_symmv_free(w);
   
-  /** Create filtered Coulob matrix **/
-  //createCoulomb3(mol,coul,energies,read);
- 
-  //coul.diagonalize(8,coul.evecs3,coul.evals3,coul.int3);
   double vec[nindex],vec2[nindex];
   for (int i=0; i<nindex; i++) {vec[i] = gsl_matrix_get(evec,i,0);}
   double sum = 0.;
@@ -214,42 +197,26 @@ vec1[0] = 1;
 
   switch (read.calc.itype) {
     case 1:
-/*      for (int i=0; i<mol[0].ngriddim; i++) { //x,y,z,...
-        fretCalc(mol,coupling);
-        for (int j=0; j<mol[0].grid[i].ngrid; j++) { //ngrid steps
-          
-        }
-
-      }
-*/
 //      for (int zi=0; zi<mol[1].grid[2].ngrid; zi++) {
 
         for (int zi=0; 1; zi++) {
-//angle = 0.;
         //slip = mol[0].grid[1].min;
         //for (int thetai=0; thetai<mol[0].grid.ntheta; thetai++) {
         //for (int islip=0; islip<mol[0].grid[2].ngrid; islip++) {
-
           fretCalc(mol,coupling);        
-          
           cout<<"Performing a FRET calculation now: "<<coupling*27.211396<<endl;
           exit(0);
           print.appendData2d(outfile2,mol[1].grid[2].min+zi*mol[1].grid[2].dgrid,coupling);
           //print.appendData3d(outfile2,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling);
-
-          //pdaCalc(mol,coupling2);
-          //print.appendData3d(pdafile,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling2);
           //print.appendData2d(pdafile,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,coupling2);
           
           //mol[0].rotateCom(mol[0].grid.dtheta,mol[1].com);
           //mol[0].translate(1,mol[0].grid[1].dgrid);
           //slip += mol[0].grid[1].dgrid;
         //} //end slip
-
         //reset x and y coordinates, keep z coordinate
         //mol[0].resetall();
         //mol[0].resetExcept(2);
-
         //translate vertically
         mol[1].translate(2,mol[1].grid[2].dgrid);
         //mol[0].setCom();
@@ -257,7 +224,6 @@ vec1[0] = 1;
       break;
     case 2:
       double dum;
-      int whichaxis = 0;
       //pertCalcDegen(mol,coul,energies,int3,dum);
       //pertCalc(mol,coul,intham,energies);
       //gsl_matrix_view m = gsl_matrix_view_array(coul.int3,nindex,nindex);
@@ -267,51 +233,67 @@ vec1[0] = 1;
       //gsl_eigen_symmv(&m.matrix,eval,evec,w);
 
       for (int zi=0; zi<1; zi++) {
-      //for (int zi=0; zi<mol[1].grid[whichaxis].ngrid; zi++) {
-        
-  cout<<mol[0].nindices<<" "<<mol[0].nmol<<endl;
         pertCalcEigen(mol,coul,energies,int3,intham);
-        //pertCalcDegen(mol,coul,energies,int3,dum,intham,read);
         propagateTime(mol,coul,energies,read.dyn.tstart,
                       read.dyn.tfinish,read.dyn.increment,intham,read);
 
-        exit(0);
- 
- 
-        print.appendData2d(outfile2,mol[1].grid[whichaxis].min+zi*mol[1].grid[whichaxis].dgrid,dum);
-        mol[1].translate(whichaxis,mol[1].grid[whichaxis].dgrid);
-        
-        createCoulomb3(mol,coul);
-        createCoulomb3(mol,int3);
-        for (int i=0; i<nindex; i++) {
-          coul.int3[i+i*nindex] += energies[i];
-          for (int j=0; j<nindex; j++) {
-            if (i!=j)
-              coul.int3[i+j*nindex] *= 10;
-          }
-        }
-        m = gsl_matrix_view_array(coul.int3,nindex,nindex);
-        //w = gsl_eigen_symmv_alloc(nindex);
-        gsl_eigen_symmv(&m.matrix,eval,evec,w);
+      }
+      break;
+    case 3:
+      ofstream cfile;
+      cfile.open("coupling-3.dat");
+      double r12,r23;
+      double minsep = read.mol[2].mv[0].min - read.mol[1].mv[0].min;
 
-        double vec[nindex],vec2[nindex];
-        for (int i=0; i<nindex; i++) {vec[i] = gsl_matrix_get(evec,i,0);}
-        double sum = 0.;
+      for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
+      mol[1].setCom();
+      mol[2].setCom();
+      while (mol[2].com[read.mol[2].mv[0].iaxis] < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
+        createCoulomb3(mol,coul);
+      /** Filter Coulomb Matrix for energy conservation **/
         for (int i=0; i<nindex; i++) {
-          sum = 0.;
-          coul.evals3[i] = gsl_vector_get(eval,i);
-          //coul.int3[i+i*nindex] += energies[i];
-          //cout<<"evals "<<i<<" "<<coul.evals3[i]<<endl;
           for (int j=0; j<nindex; j++) {
-           // if (i!=j)
-             // coul.int3[i+j*nindex] *= 10;
-            coul.evecs3[i+j*nindex] = gsl_matrix_get(evec,i,j);
-            cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*nindex]<<endl;
+            int3[i+j*nindex] = coul.int3[i+j*nindex];
+            int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
           }
+          int3[i+i*nindex] += energies[i];
+        }
+  
+      /** Get eigensystem of Coulomb matrix **/
+        gsl_matrix_view m = gsl_matrix_view_array(int3,nindex,nindex);
+        gsl_vector *eval = gsl_vector_alloc(nindex);
+        gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
+        gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(nindex);
+        gsl_eigen_symmv(&m.matrix,eval,evec,w);
+        gsl_eigen_symmv_free(w);
+  
+      for (int i=0; i<nindex; i++) {vec[i] = gsl_matrix_get(evec,i,0);}
+      for (int i=0; i<nindex; i++) {
+        coul.evals3[i] = gsl_vector_get(eval,i);
+        for (int j=0; j<nindex; j++) {
+          coul.evecs3[i+j*nindex] = gsl_matrix_get(evec,i,j);
         }
       }
-      gsl_eigen_symmv_free(w);
-      break;
+
+      /** Get perturbative correction **/
+      pertCalcEigen(mol,coul,energies,int3,intham);
+
+      /** Write the coupling to file **/
+      print.appendData3d(cfile,
+                mol[1].com[read.mol[1].mv[0].iaxis],
+                mol[2].com[read.mol[2].mv[0].iaxis]-mol[1].com[read.mol[1].mv[0].iaxis],
+                intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+
+      mol[2].translate(read.mol[2].mv[0].iaxis,mol[2].grid[read.mol[2].mv[0].iaxis].dgrid);
+      mol[2].setCom();
+    }//end move 2
+    mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
+    mol[2].resetall();
+    mol[2].translate(read.mol[2].mv[0].iaxis,mol[1].com[read.mol[2].mv[0].iaxis]+minsep);
+    
+    } //end move 1
+    break;
+
     }
   return 0;
 }

@@ -56,6 +56,12 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
               calc.itype = 2;
             } else if (s.compare(0,4,"fret",0,4)==0) {
               calc.itype = 1;
+            } else if (s.compare(0,8,"coupling",0,8)==0) {
+              calc.itype = 3;
+              s=strtok(NULL," ");
+              calc.istate = atoi(s.c_str());
+              s=strtok(NULL," ");
+              calc.fstate = atoi(s.c_str());
             }
           } else if (string(*it).compare(0,7,"ewindow",0,7)==0) {
             calc.ewindow = atof(s.c_str());
@@ -187,6 +193,12 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
         in.getline(c,1000);
         s=strtok(c," ");
         mol[molcount].mv[i].axis = s;
+        if (s.compare(0,1,"x",0,1)==0)
+          mol[molcount].mv[i].iaxis = 0;
+        else if (s.compare(0,1,"y",0,1)==0)
+          mol[molcount].mv[i].iaxis = 1;
+        else if (s.compare(0,1,"z",0,1)==0)
+          mol[molcount].mv[i].iaxis = 2;
         s=strtok(NULL," ");
         mol[molcount].mv[i].min = atof(s.c_str());
         s=strtok(NULL," ");

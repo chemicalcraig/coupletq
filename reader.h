@@ -1,7 +1,7 @@
 #ifndef READER_H
 #define READER_H
 /****************************************************
- * The reader class parses an exciton .com file
+ * The reader class parses an exciton com file
  * and sets up the appropriate calculation
  *
  * See README for appropriate format and 
@@ -27,6 +27,7 @@ struct ChargeFile {
 
 struct Move {
   string axis;
+  int iaxis;
   double min,max;
   int steps;
 };
@@ -50,6 +51,7 @@ struct Calc{
 /** Calculation Stack **/
   string type;
   int itype;
+  int istate,fstate;
   double ewindow;
   int molecules;
 };
