@@ -248,7 +248,8 @@ vec1[0] = 1;
       for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
       mol[1].setCom();
       mol[2].setCom();
-      while (mol[2].com[read.mol[2].mv[0].iaxis] < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
+      while (mol[2].com[read.mol[2].mv[0].iaxis] 
+            < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
         createCoulomb3(mol,coul);
       /** Filter Coulomb Matrix for energy conservation **/
         for (int i=0; i<nindex; i++) {
@@ -287,9 +288,11 @@ vec1[0] = 1;
       mol[2].translate(read.mol[2].mv[0].iaxis,mol[2].grid[read.mol[2].mv[0].iaxis].dgrid);
       mol[2].setCom();
     }//end move 2
+
     mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
     mol[2].resetall();
-    mol[2].translate(read.mol[2].mv[0].iaxis,mol[1].com[read.mol[2].mv[0].iaxis]+minsep);
+    if (read.mol[2].mv[0].min >= 0)
+      mol[2].translate(read.mol[2].mv[0].iaxis,mol[1].com[read.mol[2].mv[0].iaxis]+minsep);
     
     } //end move 1
     break;
