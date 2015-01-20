@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
   Reader read(argv[1]);
   mol = initialize(read);
   
-  /** Set COM **/
+  /** Set COM before initial translation**/
   for (int i=0; i<read.calc.molecules; i++) {
     mol[i].setCom();
   }
@@ -59,15 +59,18 @@ int main(int argc, char **argv) {
   }
   
 /*****************  Setting up Molecular distribution ******************/
+  //set initial positions
+  arrangeMol(mol);
+ 
   /** Calculate transition dipole from charges **/
   /** This also sets the transition vector elements **/
+  /** This also resets the current conformation to be the initial **/
   for (int i=0; i<read.calc.molecules; i++) {
+    mol[i].setCom();
     mol[i].setPostoInit();
   }
 
-  //reset initial positions
-  arrangeMol(mol);
- 
+
   /** Print initial positions **/
   ofstream posout;
   posout.open("initpos.dat");
@@ -86,6 +89,7 @@ int main(int argc, char **argv) {
   for (int i=0; i<read.calc.molecules; i++) {
     nindex *= mol[i].nstates;
   }
+  
   int3 = new double[nindex*nindex];
   intham = new double[nindex*nindex];
 
@@ -240,16 +244,25 @@ vec1[0] = 1;
       }
       break;
     case 3:
-      ofstream cfile;
+    //NB This is set up for displacement in only one direction at the moment
+      int whichaxis = 2;
+      ofstream cfile,cmfile;
       cfile.open("coupling-3.dat");
+      cmfile.open("com.dat");
       double r12,r23;
       double minsep = read.mol[2].mv[0].min - read.mol[1].mv[0].min;
 
       for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
       mol[1].setCom();
       mol[2].setCom();
+//CTCs change this while condition for C1 or C2
+//C1
+//      while (mol[2].com[read.mol[2].mv[0].iaxis] 
+//            < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
+//C2
       while (mol[2].com[read.mol[2].mv[0].iaxis] 
-            < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
+            > read.mol[2].mv[0].max) {
+//CTCe
         createCoulomb3(mol,coul);
       /** Filter Coulomb Matrix for energy conservation **/
         for (int i=0; i<nindex; i++) {
@@ -280,13 +293,23 @@ vec1[0] = 1;
       pertCalcEigen(mol,coul,energies,int3,intham);
 
       /** Write the coupling to file **/
-      print.appendData3d(cfile,
+//CTCs Change printing conditions for different configurations
+//C1
+/*      print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
                 mol[2].com[read.mol[2].mv[0].iaxis]-mol[1].com[read.mol[1].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+*/
+//C2
+      print.appendData3d(cfile,
+                mol[1].com[read.mol[1].mv[0].iaxis],
+                mol[2].com[read.mol[2].mv[0].iaxis],
+                intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
 
+//CTCe
       mol[2].translate(read.mol[2].mv[0].iaxis,mol[2].grid[read.mol[2].mv[0].iaxis].dgrid);
       mol[2].setCom();
+      //print.appendData2d(cmfile,mol[2].com[0],mol[1].com[0]);
     }//end move 2
 
     mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
