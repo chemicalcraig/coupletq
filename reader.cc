@@ -179,32 +179,47 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
     /** move **/
     if (s1.compare(0,4,"move",0,4) == 0) {
       int n=-1;
+      int nc=0;
+      int ncount=0;
       while(s.compare(0,3,"end",0,3)!=0) {
         in>>ws;
         in.getline(c,1000);
         s=c;
+        if (s.compare(0,1,"#",0,1)==0) {
+          //cout<<"line commented "<<s<<endl;
+          nc++;
+          //cout<<"nc = "<<endl;
+        }
         n++;
       }
       in.seekg(pos);
-      mol[molcount].mv = new Move[n];
-      mol[molcount].nmov = n;
+      mol[molcount].mv = new Move[n-nc];
+      mol[molcount].nmov = n-nc;
+      
+      int imv=0;
+      nc=0;
+      //while(s.compare(0,3,"end",0,3)!=0) {
       for (int i=0; i<n; i++) {
         in>>ws;
         in.getline(c,1000);
         s=strtok(c," ");
-        mol[molcount].mv[i].axis = s;
+        if (s.compare(0,1,"#",0,1)==0) {
+          nc++;
+          continue;
+        }
+        mol[molcount].mv[i-nc].axis = s;
         if (s.compare(0,1,"x",0,1)==0)
-          mol[molcount].mv[i].iaxis = 0;
+          mol[molcount].mv[i-nc].iaxis = 0;
         else if (s.compare(0,1,"y",0,1)==0)
-          mol[molcount].mv[i].iaxis = 1;
+          mol[molcount].mv[i-nc].iaxis = 1;
         else if (s.compare(0,1,"z",0,1)==0)
-          mol[molcount].mv[i].iaxis = 2;
+          mol[molcount].mv[i-nc].iaxis = 2;
         s=strtok(NULL," ");
-        mol[molcount].mv[i].min = atof(s.c_str());
+        mol[molcount].mv[i-nc].min = atof(s.c_str());
         s=strtok(NULL," ");
-        mol[molcount].mv[i].max = atof(s.c_str());
+        mol[molcount].mv[i-nc].max = atof(s.c_str());
         s=strtok(NULL," ");
-        mol[molcount].mv[i].steps = atoi(s.c_str());
+        mol[molcount].mv[i-nc].steps = atoi(s.c_str());
       }
       in.getline(c,1000);
     } //end move

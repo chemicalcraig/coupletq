@@ -257,11 +257,11 @@ vec1[0] = 1;
       mol[2].setCom();
 //CTCs change this while condition for C1 or C2
 //C1
-//      while (mol[2].com[read.mol[2].mv[0].iaxis] 
-//            < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
-//C2
       while (mol[2].com[read.mol[2].mv[0].iaxis] 
-            > read.mol[2].mv[0].max) {
+            < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
+//C2
+//      while (mol[2].com[read.mol[2].mv[0].iaxis] 
+//            > read.mol[2].mv[0].max) {
 //CTCe
         createCoulomb3(mol,coul);
       /** Filter Coulomb Matrix for energy conservation **/
@@ -295,17 +295,17 @@ vec1[0] = 1;
       /** Write the coupling to file **/
 //CTCs Change printing conditions for different configurations
 //C1
-/*      print.appendData3d(cfile,
+      print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
                 mol[2].com[read.mol[2].mv[0].iaxis]-mol[1].com[read.mol[1].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
-*/
+
 //C2
-      print.appendData3d(cfile,
+/*      print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
                 mol[2].com[read.mol[2].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
-
+*/
 //CTCe
       mol[2].translate(read.mol[2].mv[0].iaxis,mol[2].grid[read.mol[2].mv[0].iaxis].dgrid);
       mol[2].setCom();
