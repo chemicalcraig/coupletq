@@ -28,6 +28,13 @@ int main(int argc, char **argv) {
   
   /** Read input com file **/
   Reader read(argv[1]);
+  if (read.calc.configuration..compare(0,2,"c1",0,2)==0) {
+    #define c1 1
+  } else if (s.compare(0,2,"c2",0,2) {
+    #define c2 1
+  }
+            
+ 
   mol = initialize(read);
   
   /** Set COM before initial translation**/
@@ -246,22 +253,30 @@ vec1[0] = 1;
     case 3:
     //NB This is set up for displacement in only one direction at the moment
       int whichaxis = 2;
-      ofstream cfile,cmfile;
+      bool closest = true;
+      ofstream cfile,cmfile,crossfile1,crossfile2;;
       cfile.open("coupling-3.dat");
       cmfile.open("com.dat");
+      crossfile1.open("cross1.dat");
+      crossfile2.open("cross2.dat");
+
       double r12,r23;
       double minsep = read.mol[2].mv[0].min - read.mol[1].mv[0].min;
-
+      
       for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
       mol[1].setCom();
       mol[2].setCom();
 //CTCs change this while condition for C1 or C2
 //C1
+#ifdef C1_
       while (mol[2].com[read.mol[2].mv[0].iaxis] 
             < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
 //C2
-//      while (mol[2].com[read.mol[2].mv[0].iaxis] 
-//            > read.mol[2].mv[0].max) {
+#endif
+#ifdef C2_
+      while (mol[2].com[read.mol[2].mv[0].iaxis] 
+            > read.mol[2].mv[0].max) {
+#endif
 //CTCe
         createCoulomb3(mol,coul);
       /** Filter Coulomb Matrix for energy conservation **/
@@ -307,16 +322,34 @@ vec1[0] = 1;
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
 */
 //CTCe
+      
+      /** Write the closest approach cross section in each direction **/
+      if (mol[1].com[read.mol[1].mv[0].iaxis]==mol[1].icom[read.mol[1].mv[0].iaxis]) {
+        /** Cross1 **/
+        print.appendData2d(crossfile1,mol[2].com[read.mol[2].mv[0].iaxis],
+                intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+      }
+      if (closest) {
+        /** Cross2 **/
+        print.appendData2d(crossfile2,mol[1].com[read.mol[1].mv[0].iaxis],
+                intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+        closest = false;
+      }
+
+
+
       mol[2].translate(read.mol[2].mv[0].iaxis,mol[2].grid[read.mol[2].mv[0].iaxis].dgrid);
       mol[2].setCom();
       //print.appendData2d(cmfile,mol[2].com[0],mol[1].com[0]);
     }//end move 2
 
     mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
+    mol[1].setCom();
     mol[2].resetall();
-    if (read.mol[2].mv[0].min >= 0)
-      mol[2].translate(read.mol[2].mv[0].iaxis,mol[1].com[read.mol[2].mv[0].iaxis]+minsep);
-    
+    if (read.mol[2].mv[0].min >= 0) {
+      mol[2].moveTo(read.mol[2].mv[0].iaxis,mol[1].com[read.mol[2].mv[0].iaxis]+minsep);
+    }
+    closest=true;
     } //end move 1
     break;
 

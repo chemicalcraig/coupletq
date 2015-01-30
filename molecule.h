@@ -37,6 +37,8 @@ class Molecule {
   void setPostoInit();
   void resetall();
   void arrangeMol();
+  void moveTo(const int which, const double where);
+  
   int griddim; 
 
   double *ci; //ci coefficients

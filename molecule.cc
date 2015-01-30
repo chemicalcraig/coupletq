@@ -304,13 +304,23 @@ void Molecule::translate(const int which, double howmuch) {
 }
 
 void Molecule::resetall() {
-  for (int i=0; i<this->natoms; i++) {
-    for (int j=0; j<3; j++) {
+
+  for (int j=0; j<3; j++) {
+    for (int i=0; i<this->natoms; i++) {
       this->atoms[i].pos[j] = this->atoms[i].ipos[j];
-      this->com[j] = this->icom[j];
-      this->dip[j] = this->idip[j];
     }
+    //cout<<"position "<<this->icom[j]<<endl;
+    this->com[j] = this->icom[j];
+    this->dip[j] = this->idip[j];
   }
+}
+
+void Molecule::moveTo(const int which, const double where) {
+  double howmuch = where - this->com[which];
+  for (int i=0; i<this->natoms; i++) {
+    this->atoms[i].pos[which] += howmuch;
+  }
+  this->com[which] += howmuch;
 }
 
 void Molecule::resetExcept(int keep) {
