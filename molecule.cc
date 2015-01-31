@@ -49,6 +49,12 @@ Molecule *initialize(Reader r) {
     mol[i].natoms = getNatoms(r.mol[i].cf[0].file,r.calc.molecules,mol);
     mol[i].atoms = new Atom[mol[i].natoms];
         cout<<"Molecule "<<i+1<<" has "<<mol[i].natoms<<" atoms"<<endl;
+    if (r.mol[i].target != 0) {
+      mol[i].target = r.mol[i].target;
+      cout<<"looking for tddft target state "<<mol[i].target<<" on mol "<<i<<endl;
+    } else {
+      mol[i].target = 1;
+    }
     //Allocate atoms and all of their densities
     //We use lower triangular form for the couplings
     for (int j=0; j<mol[i].natoms; j++) {
@@ -63,6 +69,7 @@ Molecule *initialize(Reader r) {
   
     /** Get Excitation energies from TDDFT calc **/
     getTDDFT(r.mol[i].tddftfile,&mol[i]);
+    cout<<"done with tddft stuff for mol "<<i<<endl;
   }
 
   /** Set Molecular Mass **/

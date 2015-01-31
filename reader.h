@@ -63,6 +63,7 @@ struct Mol{
   int ncharges;
   int nmov;
   int nrot;
+  int target;
   ChargeFile *cf;
   Move *mv;
   Rot *rot;

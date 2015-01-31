@@ -21,6 +21,7 @@ class Molecule {
   double groundenergy; //ground state energy in a.u.
   double mass; //molecular mass
   int nstates; //number of excited states to consider
+  int target; //target excited state root
   int nao,nbasis; //number of AO's and eigenvectors
   int nmo; //Number of orthonormal MO's
   int nroots; //Number of TDDFT roots

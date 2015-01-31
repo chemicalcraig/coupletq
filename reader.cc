@@ -21,7 +21,7 @@ const string subdirs_[] = {"charges","Charges","CHARGES",
                          "output","Output","OUTPUT","configuration"};
 const string opts_[] = {"type","ewindow","molecules","states","charges",
                            "move","rotate","tddft","start","finish","steps",
-                           "increment","init","output","populations","wincrement","file"};
+                           "increment","init","output","populations","wincrement","file","configuration","target"};
 list<string> directives_(dirs_, dirs_+sizeof(dirs_)/sizeof(string));
 list<string> subdirectives_(subdirs_, subdirs_+sizeof(subdirs_)/sizeof(string));
 list<string> options_(opts_, opts_+sizeof(opts_)/sizeof(string));
@@ -68,13 +68,14 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
           } else if (string(*it).compare(0,9,"molecules",0,9)==0) {
             calc.molecules = atoi(s.c_str());
             mol = new Mol[calc.molecules];
-          } else if (string(*it).compare(0,13,"configuration",0,13)==0 {
+          } else if (string(*it).compare(0,13,"configuration",0,13)==0) {
             calc.configuration = s;
-            if (s.compare(0,2,"c1",0,2)==0) {
-              #define c1 1
-            } else if (s.compare(0,2,"c2",0,2) {
-              #define c2 1
-            }
+            //if (s.compare(0,2,"c1",0,2)==0) {
+            //  #define c1 1
+            //} else if (s.compare(0,2,"c2",0,2) {
+              //#define c2 1
+            //}
+            
           }
         }
       }
@@ -106,7 +107,9 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
             mol[molcount].nstates = atoi(s.c_str());
           } else if (string(*it).compare(0,5,"tddft",0,5)==0) {
             mol[molcount].tddftfile = s;
-          }         
+          } else if (string(*it).compare(0,6,"target",0,6)==0) {
+            mol[molcount].target = atoi(s.c_str());
+          }
         }
       }
     } //found the end

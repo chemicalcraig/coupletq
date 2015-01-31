@@ -28,10 +28,10 @@ int main(int argc, char **argv) {
   
   /** Read input com file **/
   Reader read(argv[1]);
-  if (read.calc.configuration..compare(0,2,"c1",0,2)==0) {
-    #define c1 1
-  } else if (s.compare(0,2,"c2",0,2) {
-    #define c2 1
+  if (read.calc.configuration.compare(0,2,"c1",0,2)==0) {
+    #define C1_ 1
+  } else if (read.calc.configuration.compare(0,2,"c2",0,2)==0) {
+    #define C2_ 1
   }
             
  
@@ -115,9 +115,6 @@ int main(int argc, char **argv) {
   for (int i=0; i<nindex; i++) {
     energies[i] = 0.;
     for (int m=0; m<mol[0].nmol; m++) {
-      if (m!=0)
-        energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]]*1;
-      else
         energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
     }
     energies[0] = 0.;
@@ -235,8 +232,6 @@ vec1[0] = 1;
       break;
     case 2:
       double dum;
-      //pertCalcDegen(mol,coul,energies,int3,dum);
-      //pertCalc(mol,coul,intham,energies);
       //gsl_matrix_view m = gsl_matrix_view_array(coul.int3,nindex,nindex);
       //gsl_vector *eval = gsl_vector_alloc(nindex);
       //gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
@@ -272,8 +267,7 @@ vec1[0] = 1;
       while (mol[2].com[read.mol[2].mv[0].iaxis] 
             < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
 //C2
-#endif
-#ifdef C2_
+#elif defined( C2_ )
       while (mol[2].com[read.mol[2].mv[0].iaxis] 
             > read.mol[2].mv[0].max) {
 #endif

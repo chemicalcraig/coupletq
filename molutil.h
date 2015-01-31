@@ -42,7 +42,7 @@ void getlines(ifstream &in, char *temp, int n, int length) {
 
 /** Get TDDFT information from logfile **/
 bool getTDDFT(string str, Molecule *mol) {
-
+cout<<45<<endl;
     ifstream infile;
     infile.precision(9);
     infile.open(str.c_str());
@@ -74,6 +74,7 @@ bool getTDDFT(string str, Molecule *mol) {
             tddftstack = false;
           } //end nroots
 
+cout<<45<<" "<<mol->nroots<<endl;
           //get spin state
           if ((temps.compare(0,9,"notriplet")==0) || 
               (temps.compare(0,9,"Notriplet")==0) ||
@@ -131,7 +132,7 @@ bool getTDDFT(string str, Molecule *mol) {
       
       //Get TDDFT information
       if (temps.compare(0,10,tddft_str,0,10) == 0) {
-
+cout<<"mol 2 has "<<" roots"<<endl;
         mol->allocateMemTddft();
         
         //Get the ground state energy
@@ -143,16 +144,20 @@ bool getTDDFT(string str, Molecule *mol) {
         getlines(infile,tempc,2,1000);
 
         for (int root=0; root<mol->nroots; root++) {
-
+          cout<<root<<" "<<mol->nroots<<endl;
           infile.getline(tempc,1000);
           temps = strtok(tempc," ");
           for (int i=0; i<4; i++) temps = strtok(NULL," ");
         
           //get energy of root
-          mol->excenergy[root+1] = atof(temps.c_str());
+          if (root == mol->target-1) {
+            //CTC change this for multiple excited states on each molecule
+            //mol->excenergy[root+1] = atof(temps.c_str());
+            mol->excenergy[1] = atof(temps.c_str());
+
+          }
 
           getlines(infile,tempc,2,1000);
-          
           //skip for triplet
         if (mol->spinstate == 0) {
           for (int k=0; k<3; k++) {
@@ -166,7 +171,6 @@ bool getTDDFT(string str, Molecule *mol) {
 
             infile.getline(tempc,1000);
           }//end trans moment
-
           //get oscillator strength
           temps = strtok(tempc," ");
           for (int i=0; i<3; i++) temps=strtok(NULL," ");
