@@ -18,7 +18,7 @@ const string subdirs_[] = {"charges","Charges","CHARGES",
                          "move","Move","MOVE",
                          "rotate","Rotate","ROTATE",
                          "init","Init","INIT",
-                         "output","Output","OUTPUT","configuration"};
+                         "output","Output","OUTPUT"};
 const string opts_[] = {"type","ewindow","molecules","states","charges",
                            "move","rotate","tddft","start","finish","steps",
                            "increment","init","output","populations","wincrement","file","configuration","target"};
@@ -68,7 +68,7 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
           } else if (string(*it).compare(0,9,"molecules",0,9)==0) {
             calc.molecules = atoi(s.c_str());
             mol = new Mol[calc.molecules];
-          } else if (string(*it).compare(0,13,"configuration",0,13)==0) {
+          } else if (string(*it).compare(0,12,"configuration",0,12)==0) {
             calc.configuration = s;
             //if (s.compare(0,2,"c1",0,2)==0) {
             //  #define c1 1
@@ -76,7 +76,7 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
               //#define c2 1
             //}
             
-          }
+          } 
         }
       }
     } //found the end

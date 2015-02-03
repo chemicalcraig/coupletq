@@ -29,11 +29,11 @@ int main(int argc, char **argv) {
   /** Read input com file **/
   Reader read(argv[1]);
   if (read.calc.configuration.compare(0,2,"c1",0,2)==0) {
-    #define C1_ 1
+    C1_=true;
   } else if (read.calc.configuration.compare(0,2,"c2",0,2)==0) {
-    #define C2_ 1
-  } else if (read.calc.configuration.compare(0,2,"c2",0,2)==0) {
-    #define C3_ 1          
+    C2_=true;
+  } else if (read.calc.configuration.compare(0,2,"c3",0,2)==0) {
+    C3_=true;  
   }
   mol = initialize(read);
   
@@ -187,7 +187,6 @@ vec1[0] = 1;
   for (int i=0; i<mol[0].nindices; i++) {
    // cout<<i<<" transformed vec "<<vec1[i]<<endl;
   }
- exit(0);
  
 
 
@@ -258,24 +257,28 @@ vec1[0] = 1;
       double r12,r23;
       double minsep = read.mol[2].mv[0].min - read.mol[1].mv[0].min;
       
+      /** NB for C3 the number of steps must be the same for all
+       * directions. The directions must also be listed in the same
+       * order for molecules 1 and 2 in the input file (maybe, haven't
+       * tested it but better safe than sorry **/
       for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
-      mol[1].setCom();
-      mol[2].setCom();
+        mol[1].setCom();
+        mol[2].setCom();
 
         for (int r2=0; r2<read.mol[2].mv[0].steps; r2++) {
 //CTCs change this while condition for C1 or C2
 //C1
-#ifdef C1_
-      while (mol[2].com[read.mol[2].mv[0].iaxis] 
-            < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
+//#ifdef C1_
+//      while (mol[2].com[read.mol[2].mv[0].iaxis] 
+//            < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
 //C2
-#elif defined( C2_ )
-      while (mol[2].com[read.mol[2].mv[0].iaxis] 
-            > read.mol[2].mv[0].max) {
+//#elif defined( C2_ )
+//      while (mol[2].com[read.mol[2].mv[0].iaxis] 
+//            > read.mol[2].mv[0].max) {
 //C3
-#elif defined(C3_)
-      while (mol[2].com[read.mol[2].mv[1].iaxis] < read.mol[2].mv[1].max) {
-#endif
+//#elif defined(C3_)
+//      while (mol[2].com[read.mol[2].mv[1].iaxis] < read.mol[2].mv[1].max) {
+//#endif
 //CTCe
       createCoulomb3(mol,coul);
       /** Filter Coulomb Matrix for energy conservation **/
@@ -309,24 +312,24 @@ vec1[0] = 1;
       /** Write the coupling to file **/
 //CTCs Change printing conditions for different configurations
 //C1
-#ifdef C1_
-      print.appendData3d(cfile,
+      if (C1_) {
+        print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
                 mol[2].com[read.mol[2].mv[0].iaxis]-mol[1].com[read.mol[1].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+      } else if (C2_) {
 //C2
-#elif defined( C2_ )
-      print.appendData3d(cfile,
+        print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
                 mol[2].com[read.mol[2].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+      } else if (C3_) {
 //C3
-#elif defined(C3_)
-      print.appendData3d(cfile,
+        print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
-                mol[2].com[read.mol[2].mv[1].iaxis-mol[1].com[read.mol[2].mv[1].iaxis]],
+                -mol[2].com[read.mol[2].mv[1].iaxis]+mol[1].com[read.mol[1].mv[1].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
-#endif
+      }
 //CTCe
       
       /** Write the closest approach cross section in each direction **/
@@ -341,28 +344,44 @@ vec1[0] = 1;
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
         closest = false;
       }
+
+      /** Move molecule 2 **/
       mol[2].translate(read.mol[2].mv[0].iaxis,mol[2].grid[read.mol[2].mv[0].iaxis].dgrid);
-      if (mol[2].com[read.mol[2].mv[0].iaxis]*mol[2].com[read.mol[2].mv[0].iaxis] > mol[2].mv[0].max*mol[2].mv[0].max) {
+      /** If configuration 3, then move molecule one the same amount **/
+      if (C3_) {
+        mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[2].mv[0].iaxis].dgrid);
+      }
+      
+      /** If molecule 2 is out of bounds, skip ahead **/
+      if (mol[2].com[read.mol[2].mv[0].iaxis]*mol[2].com[read.mol[2].mv[0].iaxis] > read.mol[2].mv[0].max*read.mol[2].mv[0].max) {
         continue;
       }
-#ifdef C3_
-      mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[2].mv[0].iaxis].dgrid);
-#endif
+
+      
       mol[2].setCom();
       mol[1].setCom();
       //print.appendData2d(cmfile,mol[2].com[0],mol[1].com[0]);
     }//end move 2
-#ifndef C3_
-    mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
-    mol[1].setCom();
-    mol[2].resetall();
-    if (read.mol[2].mv[0].min >= 0) {
-      mol[2].moveTo(read.mol[2].mv[0].iaxis,mol[1].com[read.mol[2].mv[0].iaxis]+minsep);
+    
+    if (!C3_) {
+      mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
+      mol[1].setCom();
+      mol[2].resetall();
+      if (read.mol[2].mv[0].min >= 0) {
+        mol[2].moveTo(read.mol[2].mv[0].iaxis,mol[1].com[read.mol[2].mv[0].iaxis]+minsep);
+      }
+    } else {
+      mol[1].resetExcept(read.mol[1].mv[1].iaxis);
+      mol[2].resetExcept(read.mol[2].mv[1].iaxis);
+      
+      mol[1].moveTo(read.mol[1].mv[1].iaxis,
+              mol[1].com[read.mol[1].mv[1].iaxis]
+              +mol[1].grid[read.mol[1].mv[1].iaxis].dgrid);
+      mol[2].moveTo(read.mol[2].mv[1].iaxis,
+              mol[2].com[read.mol[2].mv[1].iaxis]
+              +mol[2].grid[read.mol[2].mv[1].iaxis].dgrid);
+    
     }
-#endif
-#ifdef C3_
-
-#endif
     closest=true;
     } //end move 1
     break;

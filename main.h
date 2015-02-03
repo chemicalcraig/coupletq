@@ -42,4 +42,9 @@ double coupling;
 //Second order interaction matrix in 3-bit eigenbasis
 double *intham;
 double *int3;
+
+//Configurational stuff
+bool C1_=false;
+bool C2_=false;
+bool C3_=false;
 #endif // MAIN_H
