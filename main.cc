@@ -89,6 +89,7 @@ int main(int argc, char **argv) {
   posout<<"Initial configuration"<<endl;
   for (int i=0; i<read.calc.molecules; i++) {
     for (int j=0; j<mol[i].natoms; j++) {
+      posout<<mol[i].atoms[j].type<<" ";
       for (int k=0; k<3; k++) {
         posout<<mol[i].atoms[j].pos[k]<<" ";
       }
