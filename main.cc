@@ -81,12 +81,12 @@ int main(int argc, char **argv) {
   /** Print initial positions **/
   ofstream posout;
   posout.open("initpos.xyz");
-  posout<<"Initial configuration"<<endl;
   int totalAtoms = 0;
   for (int i=0; i<read.calc.molecules; i++) {
     totalAtoms += mol[i].natoms;
   }
   posout<<totalAtoms<<endl;
+  posout<<"Initial configuration"<<endl;
   for (int i=0; i<read.calc.molecules; i++) {
     for (int j=0; j<mol[i].natoms; j++) {
       for (int k=0; k<3; k++) {
