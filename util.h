@@ -84,6 +84,7 @@ void createCoulomb3(Molecule *mol, Coulomb coul, double *en,Reader r) {
                                 *window(en[i],en[j],r.calc.ewindow,0);
         }//end molecule 2
       }//end molecule 1
+      //fix over counting
       coul.int3[i+j*mol[0].nindices] /= 2.;
       cout<<"making coulomb with window "<<i<<" "<<j<<" "<<coul.int3[i+j*mol[0].nindices]<<endl;
     }//end index column
@@ -150,26 +151,6 @@ void createCoulomb3(Molecule *mol, double *mat) {
       mat[i+j*mol[0].nindices] /= 2.;
     }//end index column
   }//end index row
-/* 
-  for (int i=0; i<mol[0].nstates; i++) {
-    for (int j=0; j<mol[1].nstates; j++) {
-      for (int k=0; k<mol[2].nstates; k++) {
-        for (int l=0; l<mol[0].nstates; l++) {
-          for (int m=0; m<mol[1].nstates; m++) {
-            for (int n=0; n<mol[2].nstates; n++) {
-              int index = i + j*2 + k*4 + l*8 + m*16 + n * 32;
-              int index3 = l+m*2+n*4;
-              int index2 = i+j*2+k*4;
-              mat[index2+index3*8] = getCoulomb(mol,0,1,i,l,j,m) * Kronecker(k,n)
-                + getCoulomb(mol,0,2,i,l,k,n) * Kronecker(j,m)
-                + getCoulomb(mol,1,2,j,m,k,n) * Kronecker(i,l);
-            }
-          }
-        }
-      }
-    }
-  }
-*/
 }
 
 

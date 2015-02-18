@@ -259,10 +259,10 @@ void getCharges(string filename, Molecule *mol, int nstates, int a, int b) {
     mol->atoms[j].charges[a+b*nstates] = atof(temps.c_str());
     mol->atoms[j].charges[b+a*nstates] = atof(temps.c_str());
 
-    //CTCs set state charges to 0
-   // if (a==b) {
-   //   mol->atoms[j].charges[a+b*nstates] = 1.;
-   // }
+    //CTCs change sign of transition charges
+   //if (a!=b) {
+   //  mol->atoms[j].charges[a+b*nstates] *= -1.;
+   //}
     //CTCe
   }
 }

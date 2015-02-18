@@ -80,7 +80,13 @@ int main(int argc, char **argv) {
 
   /** Print initial positions **/
   ofstream posout;
-  posout.open("initpos.dat");
+  posout.open("initpos.xyz");
+  posout<<"Initial configuration"<<endl;
+  int totalAtoms = 0;
+  for (int i=0; i<read.calc.molecules; i++) {
+    totalAtoms += mol[i].natoms;
+  }
+  posout<<totalAtoms<<endl;
   for (int i=0; i<read.calc.molecules; i++) {
     for (int j=0; j<mol[i].natoms; j++) {
       for (int k=0; k<3; k++) {
@@ -89,7 +95,7 @@ int main(int argc, char **argv) {
       posout<<endl;
     }
   }
-
+  
   /** Set indicies matrix **/
   int nindex=1;
 
@@ -311,26 +317,26 @@ vec1[0] = 1;
 
       /** Write the coupling to file **/
 //CTCs Change printing conditions for different configurations
-//C1
+//C1 - Prints DA1, DA1A2, J
       if (C1_) {
+
         print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
                 mol[2].com[read.mol[2].mv[0].iaxis]-mol[1].com[read.mol[1].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
       } else if (C2_) {
-//C2
+//C2 - Prints DA1, DA2, J
         print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
                 mol[2].com[read.mol[2].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
       } else if (C3_) {
-//C3
+//C3 - Prints DA1_i, A1A2_j
         print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
                 -mol[2].com[read.mol[2].mv[1].iaxis]+mol[1].com[read.mol[1].mv[1].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
       }
-//CTCe
       
       /** Write the closest approach cross section in each direction **/
       if (mol[1].com[read.mol[1].mv[0].iaxis]==mol[1].icom[read.mol[1].mv[0].iaxis]) {
