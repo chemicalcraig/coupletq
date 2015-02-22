@@ -255,12 +255,17 @@ vec1[0] = 1;
     //NB This is set up for displacement in only one direction at the moment
       int whichaxis = 2;
       bool closest = true;
-      ofstream cfile,cmfile,crossfile1,crossfile2;;
+      ofstream cfile,cmfile,crossfile1,crossfile2,crossfile3,crossfile4,crossfile5,crossfile6;
       cfile.open("coupling-3.dat");
-      cmfile.open("com.dat");
-      crossfile1.open("cross1.dat");
-      crossfile2.open("cross2.dat");
-
+      if (C2_) {
+        crossfile1.open("rda2-c2.dat");
+        crossfile4.open("ra1a2-c2.dat");
+      } else if (C1_) {
+        crossfile3.open("ra1a2-c1.dat");
+        crossfile4.open("rda1da2-c1.dat");
+      }
+      crossfile2.open("rda1-c.dat");
+      
       double r12,r23;
       double minsep = read.mol[2].mv[0].min - read.mol[1].mv[0].min;
       
@@ -273,20 +278,7 @@ vec1[0] = 1;
         mol[2].setCom();
 
         for (int r2=0; r2<read.mol[2].mv[0].steps; r2++) {
-//CTCs change this while condition for C1 or C2
-//C1
-//#ifdef C1_
-//      while (mol[2].com[read.mol[2].mv[0].iaxis] 
-//            < read.mol[2].mv[0].max+mol[1].com[read.mol[1].mv[0].iaxis]) {
-//C2
-//#elif defined( C2_ )
-//      while (mol[2].com[read.mol[2].mv[0].iaxis] 
-//            > read.mol[2].mv[0].max) {
-//C3
-//#elif defined(C3_)
-//      while (mol[2].com[read.mol[2].mv[1].iaxis] < read.mol[2].mv[1].max) {
-//#endif
-//CTCe
+      
       createCoulomb3(mol,coul);
       /** Filter Coulomb Matrix for energy conservation **/
         for (int i=0; i<nindex; i++) {
@@ -340,16 +332,33 @@ vec1[0] = 1;
       }
       
       /** Write the closest approach cross section in each direction **/
-      if (mol[1].com[read.mol[1].mv[0].iaxis]==mol[1].icom[read.mol[1].mv[0].iaxis]) {
-        /** Cross1 **/
+      if (C2_ && (mol[1].com[read.mol[1].mv[0].iaxis]==mol[1].icom[read.mol[1].mv[0].iaxis])) {
+        /** For use with C2, this prints DA2 **/
         print.appendData2d(crossfile1,mol[2].com[read.mol[2].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
       }
       if (closest) {
-        /** Cross2 **/
+        /** For use with C1 and C2, this prints DA1 **/
         print.appendData2d(crossfile2,mol[1].com[read.mol[1].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
         closest = false;
+      }
+      if (C1_ ) {
+        if (mol[1].com[read.mol[1].mv[0].iaxis]==mol[1].icom[read.mol[1].mv[0].iaxis]) {
+          /** For use with C1, this prints A1A2 for closest DA1 **/
+          print.appendData2d(crossfile3,mol[2].com[read.mol[2].mv[0].iaxis]-mol[1].com[read.mol[1].mv[0].iaxis],
+                intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+        }
+        if (r1 == r2) {
+         /** For use with C1, this prints A1=A2 **/
+          print.appendData2d(crossfile4,mol[1].com[read.mol[1].mv[0].iaxis],
+                intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+        }
+      }
+      if (C2_ && (r1==r2)) {
+        /** For use with C2, this prints A1=A2 **/
+        print.appendData2d(crossfile4,mol[1].com[read.mol[1].mv[0].iaxis],
+                intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
       }
 
       /** Move molecule 2 **/
