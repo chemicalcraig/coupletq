@@ -49,7 +49,7 @@ struct Output {
 
 struct Calc{
 /** Calculation Stack **/
-  string type,configuration;
+  string type,configuration,outfile;
   int itype;
   int istate,fstate;
   double ewindow;

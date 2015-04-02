@@ -42,7 +42,6 @@ void getlines(ifstream &in, char *temp, int n, int length) {
 
 /** Get TDDFT information from logfile **/
 bool getTDDFT(string str, Molecule *mol) {
-cout<<45<<endl;
     ifstream infile;
     infile.precision(9);
     infile.open(str.c_str());
@@ -237,7 +236,6 @@ void getCharges(string filename, Molecule *mol, int nstates, int a, int b) {
   string temps;
   
   //skip natoms and energy on first two lines
-  infile.getline(tempc,1000);
   infile.getline(tempc,1000);
   
   for (int j=0; j<mol->natoms; j++) {

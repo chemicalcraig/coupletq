@@ -14,6 +14,7 @@ using namespace std;
 
 class Molecule {
   public:
+  int fstate,istate;
   int nindices;
   int *indices;
   int spinstate; //spin state, 0=singlet, 1=triplet

@@ -41,7 +41,8 @@ Molecule *initialize(Reader r) {
   
   /** Declare Molecule **/
   Molecule * mol = new Molecule[r.calc.molecules];
-  
+  mol[0].outputfilename = r.calc.outfile;
+
   /** Get number of atoms and densities **/
   for (int i=0; i<r.calc.molecules; i++) {
     mol[i].nstates = r.mol[i].nstates;
@@ -54,6 +55,10 @@ Molecule *initialize(Reader r) {
       cout<<"looking for tddft target state "<<mol[i].target<<" on mol "<<i<<endl;
     } else {
       mol[i].target = 1;
+    }
+    if (r.calc.itype==1) {
+      mol[i].istate = r.mol[i].cf[0].i;
+      mol[i].fstate = r.mol[i].cf[0].f;
     }
     //Allocate atoms and all of their densities
     //We use lower triangular form for the couplings

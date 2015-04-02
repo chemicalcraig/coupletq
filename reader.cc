@@ -11,7 +11,7 @@ using namespace std;
 * and keywords
 * *********************/
 const string dirs_[] = {"calculation","Calculation","CALCULATION",
-                      "molecules","Molecules","MOLECULES",
+                      "molecule","Molecule","MOLECULE",
                       "dynamics","Dynamics","DYNAMICS",
                       "fret","Fret","FRET"};
 const string subdirs_[] = {"charges","Charges","CHARGES",
@@ -19,9 +19,12 @@ const string subdirs_[] = {"charges","Charges","CHARGES",
                          "rotate","Rotate","ROTATE",
                          "init","Init","INIT",
                          "output","Output","OUTPUT"};
-const string opts_[] = {"type","ewindow","molecules","states","charges",
-                           "move","rotate","tddft","start","finish","steps",
-                           "increment","init","output","populations","wincrement","file","configuration","target"};
+const string opts_[] = {"type","ewindow","molecules",
+                          "states","charges",
+                          "move","rotate","tddft","start",
+                          "finish","steps","increment","init",
+                          "populations","wincrement",
+                          "file","configuration","target"};
 list<string> directives_(dirs_, dirs_+sizeof(dirs_)/sizeof(string));
 list<string> subdirectives_(subdirs_, subdirs_+sizeof(subdirs_)/sizeof(string));
 list<string> options_(opts_, opts_+sizeof(opts_)/sizeof(string));
@@ -63,29 +66,30 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
               s=strtok(NULL," ");
               calc.fstate = atoi(s.c_str());
             }
+          /** energy window **/
           } else if (string(*it).compare(0,7,"ewindow",0,7)==0) {
             calc.ewindow = atof(s.c_str());
+          /** number of molecules **/
           } else if (string(*it).compare(0,9,"molecules",0,9)==0) {
             calc.molecules = atoi(s.c_str());
             mol = new Mol[calc.molecules];
+          /** configuration to scan (for SSSF) **/
           } else if (string(*it).compare(0,12,"configuration",0,12)==0) {
             calc.configuration = s;
-            //if (s.compare(0,2,"c1",0,2)==0) {
-            //  #define c1 1
-            //} else if (s.compare(0,2,"c2",0,2) {
-              //#define c2 1
-            //}
-            
-          } 
+          /** output file name **/
+          } else if (string(*it).compare(0,4,"file",0,4)==0) {
+            calc.outfile = s;
+
+          }
         }
       }
     } //found the end
   } //end calculation block
   
   /** Molecules block **/
-  if ((s1.compare(0,4,"molecules",0,4) == 0) ||
-      (s1.compare(0,4,"Molecules",0,4) == 0) ||
-      (s1.compare(0,4,"MOLECULES",0,4) == 0)) {
+  if ((s1.compare(0,4,"molecule",0,4) == 0) ||
+      (s1.compare(0,4,"Molecule",0,4) == 0) ||
+      (s1.compare(0,4,"MOLECULE",0,4) == 0)) {
     mol[molcount].nmov = 0;
     mol[molcount].nrot = 0;
     while (s2.compare(0,3,"end",0,3) != 0) {
@@ -378,8 +382,10 @@ Reader::Reader(string f) {
     
     /** check for main directive **/
     list<string>::iterator it = find(directives_.begin(),directives_.end(),s);
-    if (s.compare(0,9,"molecules",0,9) == 0) {
-      molcount++;
+    if ((s.compare(0,4,"molecule",0,4) == 0) ||
+      (s.compare(0,4,"Molecule",0,4) == 0) ||
+      (s.compare(0,4,"MOLECULE",0,4) == 0)) {
+        molcount++;
     }
     //found directive
     if (it!=directives_.end()) {

@@ -45,8 +45,8 @@ int main(int argc, char **argv) {
   /** set up printer and output files **/
   Print print(mol);
   ofstream outfile2,pdafile;
-  remove(mol[0].outputfilename.c_str());
-  outfile2.open(mol[0].outputfilename.c_str(), std::ofstream::out | std::ofstream::app);
+  //remove(mol[0].outputfilename.c_str());
+  outfile2.open(mol[0].outputfilename.c_str());
   outfile2.precision(16);
 
   /** Set up the grid data **/
@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
   }
   
   /** Set indicies matrix **/
+
   int nindex=1;
 
   for (int i=0; i<read.calc.molecules; i++) {
@@ -109,16 +110,18 @@ int main(int argc, char **argv) {
 
   mol[0].nindices = nindex;
   setIndices(mol,mol[0].nmol,nindex);
-  for (int i=0; i<nindex; i++) 
-    for (int j=0; j<mol[0].nmol; j++) 
-      cout<<"state "<<i<<" mol "<<j<<" "<<mol[0].indices[j+i*mol[0].nmol]<<endl;
+//  for (int i=0; i<nindex; i++) 
+//    for (int j=0; j<mol[0].nmol; j++) 
+//      cout<<"state "<<i<<" mol "<<j<<" "<<mol[0].indices[j+i*mol[0].nmol]<<endl;
 
   /** Create Coulomb Matrix **/
   double temp[nindex*nindex],temp2[nindex*nindex];
   Coulomb coul(nindex);
-  
+
   /** Create state energy matrix **/
   double energies[nindex];
+  double vec[nindex],vec2[nindex];
+  if (read.calc.itype != 1) {
   for (int i=0; i<nindex; i++) {
     energies[i] = 0.;
     for (int m=0; m<mol[0].nmol; m++) {
@@ -137,11 +140,8 @@ int main(int argc, char **argv) {
   for (int i=0; i<nindex; i++) {
     //coul.int3[i+i*nindex] += energies[i];
     for (int j=0; j<nindex; j++) {
-      
-      //coul.int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
       int3[i+j*nindex] = coul.int3[i+j*nindex];
       int3[i+j*nindex] *= window(energies[i],energies[j],read.calc.ewindow,0);
-      //cout<<"coul.int3 "<<i<<" "<<j<<" "<<coul.int3[i+j*nindex]<<" "<<int3[i+j*nindex]<<endl;
     }
     int3[i+i*nindex] += energies[i];
   }
@@ -154,7 +154,7 @@ int main(int argc, char **argv) {
   gsl_eigen_symmv(&m.matrix,eval,evec,w);
   gsl_eigen_symmv_free(w);
   
-  double vec[nindex],vec2[nindex];
+
   for (int i=0; i<nindex; i++) {vec[i] = gsl_matrix_get(evec,i,0);}
   double sum = 0.;
   for (int i=0; i<nindex; i++) {
@@ -168,37 +168,7 @@ int main(int argc, char **argv) {
       cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*nindex]<<endl;
     }
   }
-/*
-double tildeint[nindex*nindex],tempm[nindex*nindex];
-double vec1[nindex];
-vec1[0] = 1;
-//Make C.V.C^T
-  cblas_dgemm(CblasColMajor,CblasTrans,CblasNoTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,coul.evecs3,
-          mol[0].nindices,coul.int3,mol[0].nindices,0,tempm,mol[0].nindices);
-  cblas_dgemm(CblasColMajor,CblasNoTrans,CblasNoTrans,mol[0].nindices,
-          mol[0].nindices,mol[0].nindices,1.,tempm,mol[0].nindices,
-          coul.evecs3,mol[0].nindices,0,tildeint,mol[0].nindices);
- for (int i=0; i<mol[0].nindices; i++) {
-    for (int j=0; j<mol[0].nindices; j++) {
-      cout<<i<<" "<<j<<" "<<tempm[i+j*mol[0].nindices]<<" "
-        <<tildeint[i+j*mol[0].nindices]<<endl;
-    }
   }
-
-  cblas_dgemv(CblasColMajor,CblasNoTrans,mol[0].nindices,
-          mol[0].nindices,1.,coul.evecs3,mol[0].nindices,vec1,1,0.,vec2,1);
-
-  cblas_dgemv(CblasColMajor,CblasTrans,mol[0].nindices,
-          mol[0].nindices,1.,coul.evecs3,mol[0].nindices,vec2,1,0.,vec1,1);
-  for (int i=0; i<mol[0].nindices; i++) {
-   // cout<<i<<" transformed vec "<<vec1[i]<<endl;
-  }
- 
-
-
-//CTC e
-
 /*******************  Done Setting up molecules *****************************/
 
   /************************************
@@ -211,29 +181,21 @@ vec1[0] = 1;
 
   switch (read.calc.itype) {
     case 1:
-//      for (int zi=0; zi<mol[1].grid[2].ngrid; zi++) {
 
-        for (int zi=0; 1; zi++) {
-        //slip = mol[0].grid[1].min;
-        //for (int thetai=0; thetai<mol[0].grid.ntheta; thetai++) {
-        //for (int islip=0; islip<mol[0].grid[2].ngrid; islip++) {
-          fretCalc(mol,coupling);        
-          cout<<"Performing a FRET calculation now: "<<coupling*27.211396<<endl;
-          exit(0);
-          print.appendData2d(outfile2,mol[1].grid[2].min+zi*mol[1].grid[2].dgrid,coupling);
-          //print.appendData3d(outfile2,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,slip,coupling);
-          //print.appendData2d(pdafile,mol[0].grid[2].min+zi*mol[0].grid[2].dgrid,coupling2);
-          
-          //mol[0].rotateCom(mol[0].grid.dtheta,mol[1].com);
-          //mol[0].translate(1,mol[0].grid[1].dgrid);
-          //slip += mol[0].grid[1].dgrid;
-        //} //end slip
-        //reset x and y coordinates, keep z coordinate
-        //mol[0].resetall();
-        //mol[0].resetExcept(2);
-        //translate vertically
-        mol[1].translate(2,mol[1].grid[2].dgrid);
-        //mol[0].setCom();
+      cout<<"Performing a FRET calculation now."<<endl;
+      cout<<"Coupling output written to "<<mol[0].outputfilename<<endl;
+      for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
+        fretCalc(mol,coupling);
+        if (r1==0)
+          cout<<"First coupling = "<<coupling*27.211396<<" meV"<<endl;
+        /** write the coupling to file **/
+        print.appendData2d(outfile2,
+            mol[1].grid[read.mol[1].mv[0].iaxis].min+r1*mol[1].grid[read.mol[1].mv[0].iaxis].dgrid,
+            coupling*27.211396);
+        
+        //translate acceptor
+        mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
+        mol[1].setCom();
       }
       break;
     case 2:

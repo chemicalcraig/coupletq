@@ -52,8 +52,8 @@ cout.precision(10);
 
 
   /** do the diagonalizing, with evals and evecs **/
-  dgeevx_(&balanc,&jobvl,&jobvr,&sense,&nd,evc,&nd,evalr,evali,leftevec,&nd,rightevec,
-          &nd,&ilo,&ihi,scale,&abnrm,rcond,rcondv,work,&lwork,iwork,&info);
+//  dgeevx_(&balanc,&jobvl,&jobvr,&sense,&nd,evc,&nd,evalr,evali,leftevec,&nd,rightevec,
+//          &nd,&ilo,&ihi,scale,&abnrm,rcond,rcondv,work,&lwork,iwork,&info);
   //dsyevd_(&jobz, &uplo, &nd, evc, &nd,evl, work, &lwork,
 	//          iwork, &liwork, &info);
     for (int i=0; i<nd; i++) {
@@ -100,8 +100,8 @@ cout.precision(10);
   int info; 
 
   /** do the diagonalizing, with evals and evecs **/
-  dsyevd_(&jobz, &uplo, &nd, evc, &nd,evl, work, &lwork,
-	          iwork, &liwork, &info);
+//  dsyevd_(&jobz, &uplo, &nd, evc, &nd,evl, work, &lwork,
+//	          iwork, &liwork, &info);
   delete[] work;
   delete[] iwork;
   for (int i=0; i<nd; i++) {
