@@ -255,7 +255,7 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
  * Coulomb operator **/
 void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,double *intham) {
   
-  cout<<" *** in pertCalc, using eigenbasis of V *** "<<endl;
+  cout<<" *** in pertCalcEigen, using eigenbasis of V *** "<<endl;
   double sum = 0.;
   double sum1=0.;
   
@@ -284,7 +284,10 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
         }
         double en = coul.evals3[i] - coul.evals3[k];
         sum += sum1/en;
+        if (i==1 && j==6)
+          cout<<"W2-SSSF("<<k<<") = "<<sum1*27211<<" meV"<<endl;
       }
+
       intham[i+j*mol[0].nindices] = sum;
     }//end final state
   }//end initial state

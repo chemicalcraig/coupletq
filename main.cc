@@ -110,9 +110,10 @@ int main(int argc, char **argv) {
 
   mol[0].nindices = nindex;
   setIndices(mol,mol[0].nmol,nindex);
-//  for (int i=0; i<nindex; i++) 
-//    for (int j=0; j<mol[0].nmol; j++) 
-//      cout<<"state "<<i<<" mol "<<j<<" "<<mol[0].indices[j+i*mol[0].nmol]<<endl;
+  cout<<"** State indices **"<<endl;
+  for (int i=0; i<nindex; i++) 
+    for (int j=0; j<mol[0].nmol; j++) 
+      cout<<"state "<<i<<" mol "<<j<<" = "<<mol[0].indices[j+i*mol[0].nmol]<<endl;
 
   /** Create Coulomb Matrix **/
   double temp[nindex*nindex],temp2[nindex*nindex];

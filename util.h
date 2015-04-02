@@ -104,6 +104,7 @@ void createCoulomb3(Molecule *mol, Coulomb coul) {
                                mol[0].indices[m1+j*mol[0].nmol],
                                mol[0].indices[m2+i*mol[0].nmol],
                                mol[0].indices[m2+j*mol[0].nmol]);
+
           coul.int3[i+j*mol[0].nindices] += dum*kron;
         }//end molecule 2
       }//end molecule 1
