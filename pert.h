@@ -285,12 +285,13 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
         double en = coul.evals3[i] - coul.evals3[k];
         sum += sum1/en;
         if (i==1 && j==6)
-          cout<<"W2-SSSF("<<k<<") = "<<sum1*27211<<" meV"<<endl;
+          cout<<"W2-SSSF("<<k<<") = "<<sum1*27211<<" meV^2, energy = "<<en*27211<<" "<<(sum1/en)*27211<<endl;
       }
 
       intham[i+j*mol[0].nindices] = sum;
     }//end final state
   }//end initial state
+  exit(0);
 }
 
 void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum,double *intham, Reader r) {

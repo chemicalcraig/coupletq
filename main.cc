@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
   cout<<"** State indices **"<<endl;
   for (int i=0; i<nindex; i++) 
     for (int j=0; j<mol[0].nmol; j++) 
-      cout<<"state "<<i<<" mol "<<j<<" = "<<mol[0].indices[j+i*mol[0].nmol]<<endl;
+      cout<<"ket "<<i<<" mol "<<j<<" = "<<mol[0].indices[j+i*mol[0].nmol]<<endl;
 
   /** Create Coulomb Matrix **/
   double temp[nindex*nindex],temp2[nindex*nindex];
@@ -135,7 +135,6 @@ int main(int argc, char **argv) {
 
   /** Create unfiltered Coulomb matrix **/
   createCoulomb3(mol,coul);
-  //createCoulomb3(mol,int3);
  
   /** Filter Coulomb Matrix for energy conservation **/
   for (int i=0; i<nindex; i++) {

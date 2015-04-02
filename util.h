@@ -56,6 +56,7 @@ double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
             /r12;
     }
   }
+  cout<<"coulomb for <"<<i<<k<<"|V_"<<I<<J<<"|"<<j<<l<<"> = "<<temp<<endl;
   return temp;
 }
 
@@ -92,7 +93,7 @@ void createCoulomb3(Molecule *mol, Coulomb coul) {
     for (int j=0; j<mol[0].nindices; j++) {
       coul.int3[i+j*mol[0].nindices] = 0.;
       for (int m1=0; m1<mol[0].nmol; m1++) {
-        for (int m2=0; m2<mol[0].nmol; m2++) {
+        for (int m2=m1; m2<mol[0].nmol; m2++) {
           if (m1 == m2) continue;
           int kron=1;
           for (int k=0; k<mol[0].nmol; k++) {
@@ -109,7 +110,7 @@ void createCoulomb3(Molecule *mol, Coulomb coul) {
         }//end molecule 2
       }//end molecule 1
       //adjust for over counting
-      coul.int3[i+j*mol[0].nindices] /= 2.;
+      //coul.int3[i+j*mol[0].nindices] /= 2.;
       cout<<"making coulomb "<<i<<" "<<j<<" "<<coul.int3[i+j*mol[0].nindices]<<endl;
     }//end index column
   }//end index row  
@@ -124,32 +125,6 @@ void multmm(double *one,double *two,double *three,int m)
 	            m,two,m,0,three,m);
 };
  
-/** Create Coulomb Matrix for three chormophores**/
-void createCoulomb3(Molecule *mol, double *mat) {
-  double sum;
-  for (int i=0; i<mol[0].nindices; i++) {
-    for (int j=0; j<mol[0].nindices; j++) {
-      mat[i+j*mol[0].nindices] = 0.;
-      for (int m1=0; m1<mol[0].nmol; m1++) {
-        for (int m2=0; m2<mol[0].nmol; m2++) {
-          if (m1 == m2) continue;
-          int kron=1;
-          for (int k=0; k<mol[0].nmol; k++) {
-            if ((k==m1) || (k==m2)) continue;
-            kron *= Kronecker(mol[0].indices[k+i*mol[0].nmol],mol[0].indices[k+j*mol[0].nmol]);
-          }
-          mat[i+j*mol[0].nindices] += getCoulomb(mol,m1,m2,
-                               mol[0].indices[m1+i*mol[0].nmol],
-                               mol[0].indices[m1+j*mol[0].nmol],
-                               mol[0].indices[m2+i*mol[0].nmol],
-                               mol[0].indices[m2+j*mol[0].nmol])*kron;
-        }//end molecule 2
-      }//end molecule 1
-      mat[i+j*mol[0].nindices] /= 2.;
-    }//end index column
-  }//end index row
-}
-
 
 /** Arrange molecules to desired configuration **/
 void arrangeMol(Molecule *mol) {
