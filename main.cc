@@ -251,7 +251,7 @@ int main(int argc, char **argv) {
           int3[i+i*nindex] += energies[i];
         }
   
-      /** Get eigensystem of Coulomb matrix **/
+      /** Get eigensystem of Coulomb matrix + bare energies (H+W1 = int3) **/
         gsl_matrix_view m = gsl_matrix_view_array(int3,nindex,nindex);
         gsl_vector *eval = gsl_vector_alloc(nindex);
         gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);

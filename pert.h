@@ -258,7 +258,8 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
   cout<<" *** in pertCalcEigen, using eigenbasis of V *** "<<endl;
   double sum = 0.;
   double sum1=0.;
-  
+  double temp[mol[0].nindices*mol[0].nindices];
+
   cout<<"/** Second order corrections in eigenbasis of V **/"<<endl;
   for (int i=0; i<mol[0].nindices; i++) { //initial state
     for (int j=0; j<mol[0].nindices; j++) { //final state
@@ -284,14 +285,28 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
         }
         double en = coul.evals3[i] - coul.evals3[k];
         sum += sum1/en;
-        if (i==1 && j==6)
-          cout<<"W2-SSSF("<<k<<") = "<<sum1*27211<<" meV^2, energy = "<<en*27211<<" "<<(sum1/en)*27211<<endl;
-      }
+     }
 
-      intham[i+j*mol[0].nindices] = sum;
+      temp[i+j*mol[0].nindices] = sum;
     }//end final state
   }//end initial state
-  exit(0);
+
+  /** Build W2 in qubit basis **/
+  for (int i=0; i<mol[0].nindices; i++) { //initial state - qb
+    for (int j=0; j<mol[0].nindices; j++) { //final state - qb
+      sum = 0.;
+      for (int k=0; k<mol[0].nindices; k++) { //initial state - ev
+        for (int l=0; l<mol[0].nindices; l++) { //final state - ev
+          sum += temp[k+l*mol[0].nindices]
+                  *coul.evecs3[i+k*mol[0].nindices]
+                  *coul.evecs3[j+l*mol[0].nindices];
+        }
+      }
+      intham[i+j*mol[0].nindices] = sum;
+      if (i==1 && j==6) cout<<"W2-SSSF "<<sum*27211<<" meV"<<endl;
+    }
+  }  
+  //exit(0);
 }
 
 void pertCalcDegen(Molecule *mol, Coulomb coul, double *energies,double *int3,double &dum,double *intham, Reader r) {
