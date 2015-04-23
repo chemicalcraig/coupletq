@@ -239,31 +239,59 @@ int main(int argc, char **argv) {
        * tested it but better safe than sorry **/
       //output matrix
       double sssfCoupling[read.mol[1].mv[0].steps*read.mol[2].mv[0].steps];
-      double pos1[read.mol[1].mv[0].steps*read.mol[2].mv[0].steps];
-      double pos2[read.mol[1].mv[0].steps*read.mol[2].mv[0].steps];
-#pragma omp parallel private(int3)
+      double pos1[read.mol[1].mv[0].steps];
+      double pos2[read.mol[2].mv[0].steps];
+      double posMol1,posMol2,m2start;
+
+  Molecule *molc;// = new Molecule[3];
+  Coulomb coulc(nindex);
+//#pragma omp parallel private(int3,posMol1,posMol2,m2start,molc,coulc)
 {
   
   int3 = new double[nindex*nindex];
-  Molecule *molc = new Molecule[3];
-  Coulomb coulc(nindex);
+  molc = new Molecule[3];
+  coulc.reinitialize(nindex);
   double *vecc = new double[nindex];
-
 
   for (int i=0; i<3; i++) {
     molc[i] = mol[i];
   }
 
-#pragma omp for
+
+//#pragma omp for ordered
     for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
+
+        posMol1 = molc[1].icom[read.mol[1].mv[0].iaxis] + r1*molc[1].grid[read.mol[1].mv[0].iaxis].dgrid;
+        molc[1].moveTo(read.mol[1].mv[0].iaxis,posMol1);
         molc[1].setCom();
-        molc[2].setCom();
 
 
+      if (!C3_) {
+        //molc[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
+        //molc[1].setCom();
+        molc[2].resetall();
+        if (read.mol[2].mv[0].min >= 0) {
+          molc[2].moveTo(read.mol[2].mv[0].iaxis,mol[1].com[read.mol[2].mv[0].iaxis]+minsep);
+        } else {
+          molc[2].resetall();
+        }
+      }
+      m2start=molc[2].com[read.mol[2].mv[0].iaxis];
       for (int r2=0; r2<read.mol[2].mv[0].steps; r2++) {
-   //     double pos2 =  + r2*molc[2].grid[read.mol[2].mv[0].iaxis].dgrid;
-
-      createCoulomb3(molc,coulc);
+        if (C1_) {
+          posMol2 = molc[1].icom[read.mol[1].mv[0].iaxis] 
+                  + r1*molc[1].grid[read.mol[1].mv[0].iaxis].dgrid
+                  + minsep;
+        
+        
+          posMol2 += r2*molc[2].grid[read.mol[2].mv[0].iaxis].dgrid;
+        } else {
+          posMol2 = molc[2].icom[read.mol[2].mv[0].iaxis]+r2*
+                      molc[2].grid[read.mol[2].mv[0].iaxis].dgrid;
+        }
+        molc[2].moveTo(read.mol[2].mv[0].iaxis,posMol2);
+        molc[2].setCom();
+        createCoulomb3(molc,coulc);
 
       /** Filter Coulomb Matrix for energy conservation **/
         for (int i=0; i<nindex; i++) {
@@ -286,7 +314,7 @@ int main(int argc, char **argv) {
         gsl_eigen_symmv(&m.matrix,eval,evec,w);
         gsl_eigen_symmv_free(w);
   
-      for (int i=0; i<nindex; i++) {vecc[i] = gsl_matrix_get(evec,i,0);}
+//      for (int i=0; i<nindex; i++) {vecc[i] = gsl_matrix_get(evec,i,0);}
       for (int i=0; i<nindex; i++) {
         coulc.evals3[i] = gsl_vector_get(eval,i);
         for (int j=0; j<nindex; j++) {
@@ -296,7 +324,7 @@ int main(int argc, char **argv) {
 
       /** Get perturbative correction **/
       pertCalcEigen(molc,coulc,energies,int3,intham);
-
+      //pertCalcElements(molc,coulc,int3,energies);
       /** Write the coupling to file **/
 //CTCs Change printing conditions for different configurations
 //C1 - Prints DA1, DA1A2, J
@@ -305,16 +333,21 @@ int main(int argc, char **argv) {
         //        mol[1].com[read.mol[1].mv[0].iaxis],
         //        mol[2].com[read.mol[2].mv[0].iaxis]-mol[1].com[read.mol[1].mv[0].iaxis],
         //        intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
-        pos1[r1+r2*read.mol[1].mv[0].steps] = molc[1].com[read.mol[1].mv[0].iaxis];
-        pos2[r1+r2*read.mol[1].mv[0].steps] = molc[2].com[read.mol[2].mv[0].iaxis]-molc[1].com[read.mol[1].mv[0].iaxis];
-        sssfCoupling[r1+r2*read.mol[1].mv[0].steps] = intham[read.calc.istate + read.calc.fstate*mol[0].nindices];
-      cout<<"saving data"<<endl;
+        pos1[r1] = posMol1;//molc[1].com[read.mol[1].mv[0].iaxis];
+        pos2[r2] = /*molc[2].com[read.mol[2].mv[0].iaxis]*/posMol2-molc[1].com[read.mol[1].mv[0].iaxis];
+        sssfCoupling[r1+r2*read.mol[1].mv[0].steps] = 
+      pertCalcElements(molc,coulc,int3,energies);//intham[read.calc.istate + read.calc.fstate*mol[0].nindices];
       } else if (C2_) {
 //C2 - Prints DA1, DA2, J
-        print.appendData3d(cfile,
+        pos1[r1] = posMol1;
+        pos2[r2] = posMol2;
+        sssfCoupling[r1+r2*read.mol[1].mv[0].steps] =
+      pertCalcElements(molc,coulc,int3,energies);// intham[read.calc.istate + read.calc.fstate*mol[0].nindices];
+        /*print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
                 mol[2].com[read.mol[2].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+      */
       } else if (C3_) {
 //C3 - Prints DA1_i, A1A2_j
         print.appendData3d(cfile,
@@ -352,37 +385,24 @@ int main(int argc, char **argv) {
         print.appendData2d(crossfile4,mol[1].com[read.mol[1].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
       }
-cout<<"move mol2 "<<endl;
       /** Move molecule 2 **/
-      molc[2].translate(read.mol[2].mv[0].iaxis,molc[2].grid[read.mol[2].mv[0].iaxis].dgrid);
-      cout<<" mol2 moved "<<endl;
+      //molc[2].translate(read.mol[2].mv[0].iaxis,molc[2].grid[read.mol[2].mv[0].iaxis].dgrid);
       /** If configuration 3, then move molecule one the same amount **/
       if (C3_) {
         mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[2].mv[0].iaxis].dgrid);
       }
-      
+     
       /** If molecule 2 is out of bounds, skip ahead **/
       if (molc[2].com[read.mol[2].mv[0].iaxis]*molc[2].com[read.mol[2].mv[0].iaxis] > read.mol[2].mv[0].max*read.mol[2].mv[0].max) {
         continue;
       }
-cout<<" com "<<endl;
       
       molc[2].setCom();
       molc[1].setCom();
       //print.appendData2d(cmfile,mol[2].com[0],mol[1].com[0]);
     }//end move 2
 
-    if (!C3_) {
-      molc[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
-      cout<<"line 377 "<<endl;
-      molc[1].setCom();
-      cout<<"line 379 "<<endl;
-      molc[2].resetall();
-      cout<<"line 381 "<<endl;
-      if (read.mol[2].mv[0].min >= 0) {
-        molc[2].moveTo(read.mol[2].mv[0].iaxis,mol[1].com[read.mol[2].mv[0].iaxis]+minsep);
-      }
-    } else {
+    if (C3_) {
       mol[1].resetExcept(read.mol[1].mv[1].iaxis);
       mol[2].resetExcept(read.mol[2].mv[1].iaxis);
       
@@ -395,16 +415,14 @@ cout<<" com "<<endl;
     
     }
     closest=true;
-    cout<<"moving 1"<<endl;
     } //end move 1
-    cout<<"done with move 1 "<<endl;
 } //end omp
     //print stuff to file  
     cout<<"Printing"<<endl;
       for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
         for (int r2=0; r2<read.mol[2].mv[0].steps; r2++) {
-          print.appendData3d(cfile,pos1[r1+r2*read.mol[1].mv[0].steps],
-                              pos2[r1+r2*read.mol[1].mv[0].steps],
+          print.appendData3d(cfile,pos1[r1],
+                              pos2[r2],
                               sssfCoupling[r1+r2*read.mol[1].mv[0].steps]);
         }
       }

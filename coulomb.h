@@ -39,7 +39,9 @@ class Coulomb {
     void createCoulomb2(Molecule *mol);
     void diagonalize(int nd, double *evc, double *evl, double *mat);
     void diagonalizenonsymm(int nd, double *evc, double *evl, double *mat);
+    void reinitialize(const int n);
     Coulomb(const int n);
+    Coulomb() {};
     ~Coulomb() {};
     
     /** Operators **/

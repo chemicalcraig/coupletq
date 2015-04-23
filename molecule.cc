@@ -288,6 +288,7 @@ void Molecule::setCom() {
     }
     sum[i] /= this->mass;
     this->com[i] = sum[i];
+
   }
 }
 
@@ -418,6 +419,7 @@ Molecule Molecule::operator=(const Molecule& other) {
   this->ny = other.ny;
   this->nz = other.nz;
   this->com = other.com;
+  this->icom = other.icom;
   this->indices = other.indices;
   //Copy Atoms
   this->atoms = other.atoms;

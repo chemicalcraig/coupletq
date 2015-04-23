@@ -251,6 +251,26 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
   outfile2.close();
 }
 
+/** Get individual elements of the perturbation operator **/
+double pertCalcElements(Molecule *mol, Coulomb coul, double *int3, double *energies) {
+  cout<<" *** Elements of W2_SSSF *** "<<endl;
+  double sum=0;
+  double sum2=0;
+  double sum3=0;
+  double dum;
+  for (int i=0; i<mol[0].nindices; i++) { //qb basis
+  if (i==1) continue;
+    sum = 0.;sum2=0.;sum3=0.;
+    dum = coul.int3[1+i*mol[0].nindices]
+          *coul.int3[i+6*mol[0].nindices];
+      sum += dum/(energies[1]-energies[i]);
+    
+    cout<<"<1|V|"<<i<<"> = "<<sum*27211<<endl;
+    }
+    cout<<sum*27211<<endl;
+    return sum;
+}
+
 /** Perturbation Calculation in eigenbasis of the 3-bit 
  * Coulomb operator **/
 void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,double *intham) {
@@ -284,6 +304,8 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
           }
         }
         double en = coul.evals3[i] - coul.evals3[k];
+        if (i==1 && j==6)
+        cout<<"<1|V|"<<k<<"> = "<<sum<<" , <"<<k<<"|V|6> = "<<27211*sum1/en<<endl;
         sum += sum1/en;
      }
 
@@ -292,14 +314,18 @@ void pertCalcEigen(Molecule *mol, Coulomb coul, double *energies,double *int3,do
   }//end initial state
 
   /** Build W2 in qubit basis **/
+  double dumb;
   for (int i=0; i<mol[0].nindices; i++) { //initial state - qb
     for (int j=0; j<mol[0].nindices; j++) { //final state - qb
       sum = 0.;
       for (int k=0; k<mol[0].nindices; k++) { //initial state - ev
         for (int l=0; l<mol[0].nindices; l++) { //final state - ev
-          sum += temp[k+l*mol[0].nindices]
+          dumb = temp[k+l*mol[0].nindices]
                   *coul.evecs3[i+k*mol[0].nindices]
                   *coul.evecs3[j+l*mol[0].nindices];
+          if (i==1 && j==6)
+            cout<<"making W2-SSSF "<<k<<" "<<l<<" "<<dumb<<endl;
+          sum += dumb;
         }
       }
       intham[i+j*mol[0].nindices] = sum;

@@ -17,6 +17,24 @@ Coulomb::Coulomb(const int n) {
   dint3 = new double[n*n];
 }
 
+void Coulomb::reinitialize(const int n) {
+  this->n2d = 4;
+  n3d = n;
+
+  //2-bit stuff
+  this->int2 = new double[this->n2d*this->n2d];
+  this->evals2 = new double[this->n2d*this->n2d];
+  this->evecs2 = new double[this->n2d*this->n2d];
+  this->dint2 = new double[this->n2d*this->n2d];
+  
+  //3-bit stuff
+  int3 = new double[n*n];
+  this->evals3 = new double[n*n];
+  evecs3 = new double[n*n];
+  dint3 = new double[n*n];
+
+}
+
 /** Diagonalize the coulomb matrix **/
 void Coulomb::diagonalizenonsymm(int nd, double *evc, double *evl, double *mat) {
 cout.precision(10);
