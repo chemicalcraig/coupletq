@@ -31,7 +31,7 @@ class Molecule {
   int nlindep; //number of linearly dependent eigenvectors
   string excMethod; //excitation method {CIS/RPA}
   double *activeCharges; //transition charges (?)
-  double rot[9], rotmatcom[9]; //rotation matrices;
+  double *rot, *rotmatcom; //rotation matrices;
   void rotateTheta(double theta, int axis); //subroutine to rotate molecule
   void rotateCom(double theta, double *cm); //rotate molecule about intermolecular COM vector
   void translate(const int which, double howmuch);//translate molecule
@@ -62,7 +62,7 @@ class Molecule {
   int nx,ny,nz;
   double dx1,dx2,dx3,dy1,dy2,dy3,dz1,dz2,dz3;
   double ox,oy,oz;
-  double com[3],icom[3];
+  double *com,*icom;
   double ***dens, ***densrad;
 
   void setnatoms(int n) {natoms = n;};

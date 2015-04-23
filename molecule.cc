@@ -45,7 +45,9 @@ Molecule *initialize(Reader r) {
 
   /** Get number of atoms and densities **/
   for (int i=0; i<r.calc.molecules; i++) {
-    mol[i].nstates = r.mol[i].nstates;
+    mol[i].rot = new double[9];
+    mol[i].rotmatcom = new double[9];
+   mol[i].nstates = r.mol[i].nstates;
     mol[i].nmol = r.calc.molecules;
     mol[i].natoms = getNatoms(r.mol[i].cf[0].file,r.calc.molecules,mol);
     mol[i].atoms = new Atom[mol[i].natoms];
@@ -94,6 +96,9 @@ Molecule::Molecule()
   this->spinstate = 0;
   this->dip = new double[3];
   this->idip = new double[3];
+  this->com = new double[3];
+  this->icom = new double[3];
+ 
 }
 
 void Molecule::allocateMem(const int nb) {
@@ -376,16 +381,48 @@ Molecule Molecule::operator=(const Molecule& other) {
   this->dipx = other.dipx;
   this->dipy = other.dipy;
   this->dipz = other.dipz;
-  this-> nlindep = other.nlindep;
-  this->excMethod = other.excMethod;
   this->activeCharges = other.activeCharges;
   this->dip = other.dip;
   this->idip = other.idip;
   this->dipmag = other.dipmag;
-
+  this->fstate = other.fstate;
+  this->istate = other.istate;
+  this->nindices = other.nindices;
+  this->spinstate = other.spinstate;
+  this->interaction = other.interaction;
+  this->groundenergy = other.groundenergy;
+  this->mass = other.mass;
+  this->nstates = other.nstates;
+  this->target = other.target;
+  this->nlindep = other.nlindep;
+  this->excMethod = other.excMethod;
+  this->rot = other.rot;
+  this->rotmatcom = other.rotmatcom;
+  this->griddim = other.griddim;
+  this->ci = other.ci;
+  this->nbasisatom = other.nbasisatom;
+  this->nbasisatomorbitals = other.nbasisatomorbitals;
+  this->nbasisatomelements = other.nbasisatomelements;
+  this->overlapm = other.overlapm;
+  this->excenergy = other.excenergy;
+  this->transmoment = other.transmoment;
+  this->oscstrength = other.oscstrength;
+  this->occupation = other.occupation;
+  this->moeigenv = other.moeigenv;
+  this->mos = other.mos;
+  this->posx = other.posx;
+  this->posy = other.posy;
+  this->posz = other.posz;
+  this->nmol = other.nmol;
+  this->nx = other.nx;
+  this->ny = other.ny;
+  this->nz = other.nz;
+  this->com = other.com;
+  this->indices = other.indices;
   //Copy Atoms
   this->atoms = other.atoms;
   //Copy grid
   this->grid = other.grid;
+  return *this;
 }
 

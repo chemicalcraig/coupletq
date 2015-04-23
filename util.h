@@ -89,6 +89,7 @@ void createCoulomb3(Molecule *mol, Coulomb coul, double *en,Reader r) {
 }
 
 void createCoulomb3(Molecule *mol, Coulomb coul) {
+  cout<<92<<" "<<mol[0].nindices<<endl;
   for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {
       coul.int3[i+j*mol[0].nindices] = 0.;

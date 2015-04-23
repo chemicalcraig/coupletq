@@ -41,6 +41,9 @@ class Coulomb {
     void diagonalizenonsymm(int nd, double *evc, double *evl, double *mat);
     Coulomb(const int n);
     ~Coulomb() {};
+    
+    /** Operators **/
+    Coulomb operator= (const Coulomb& c);
 
 };
 
