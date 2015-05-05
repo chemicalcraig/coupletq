@@ -38,7 +38,7 @@ void Molecule::setInit(Reader r, int i) {
  * Initialize the Molecule Object
  * *************************************/
 Molecule *initialize(Reader r) {
-  
+
   /** Declare Molecule **/
   Molecule * mol = new Molecule[r.calc.molecules];
   mol[0].outputfilename = r.calc.outfile;

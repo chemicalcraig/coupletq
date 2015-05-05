@@ -36,9 +36,7 @@ int main(int argc, char **argv) {
     C3_=true;  
   }
 
-
   mol = initialize(read);
-  
   /** Set COM before initial translation**/
   for (int i=0; i<read.calc.molecules; i++) {
     mol[i].setCom();
@@ -70,7 +68,7 @@ int main(int argc, char **argv) {
 /*****************  Setting up Molecular distribution ******************/
   //set initial positions
   arrangeMol(mol);
- 
+
   /** Calculate transition dipole from charges **/
   /** This also sets the transition vector elements **/
   /** This also resets the current conformation to be the initial **/
@@ -193,7 +191,7 @@ int main(int argc, char **argv) {
         /** write the coupling to file **/
         print.appendData2d(outfile2,
             mol[1].grid[read.mol[1].mv[0].iaxis].min+r1*mol[1].grid[read.mol[1].mv[0].iaxis].dgrid,
-            coupling*27.211396);
+            coupling*27211.396);
         
         //translate acceptor
         mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
@@ -376,14 +374,14 @@ int main(int argc, char **argv) {
         }
         if (r1 == r2) {
          /** For use with C1, this prints A1=A2 **/
-          print.appendData2d(crossfile4,mol[1].com[read.mol[1].mv[0].iaxis],
-                intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+          print.appendData2d(crossfile4,molc[1].com[read.mol[1].mv[0].iaxis],
+                sssfCoupling[r1+r2*read.mol[1].mv[0].steps]);
         }
       }
       if (C2_ && (r1==r2)) {
         /** For use with C2, this prints A1=A2 **/
-        print.appendData2d(crossfile4,mol[1].com[read.mol[1].mv[0].iaxis],
-                intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
+        print.appendData2d(crossfile4,molc[1].com[read.mol[1].mv[0].iaxis],
+                sssfCoupling[r1+r2*read.mol[1].mv[0].steps]);
       }
       /** Move molecule 2 **/
       //molc[2].translate(read.mol[2].mv[0].iaxis,molc[2].grid[read.mol[2].mv[0].iaxis].dgrid);

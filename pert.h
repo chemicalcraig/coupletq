@@ -255,20 +255,20 @@ void propagateTime(Molecule *mol, Coulomb coul, double *energies, double tstart,
 double pertCalcElements(Molecule *mol, Coulomb coul, double *int3, double *energies) {
   cout<<" *** Elements of W2_SSSF *** "<<endl;
   double sum=0;
-  double sum2=0;
-  double sum3=0;
   double dum;
   for (int i=0; i<mol[0].nindices; i++) { //qb basis
-  if (i==1) continue;
-    sum = 0.;sum2=0.;sum3=0.;
-    dum = coul.int3[1+i*mol[0].nindices]
-          *coul.int3[i+6*mol[0].nindices];
+    if (i==1) continue;
+      dum = coul.int3[i+1*mol[0].nindices]
+          *coul.int3[6+i*mol[0].nindices];
       sum += dum/(energies[1]-energies[i]);
-    
-    cout<<"<1|V|"<<i<<"> = "<<sum*27211<<endl;
+      cout<<"<1|V|"<<i<<"><"<<i<<"|V|6>/dE = "
+        <<27211*dum/(energies[1]-energies[i])
+        <<", <1|V"<<i<<"><"<<i<<"|V|6> = "<<27211*dum<<" "
+        <<coul.int3[i+1*mol[0].nindices]*27211<<" "
+        <<coul.int3[6+i*mol[0].nindices]*27211<<endl;
     }
-    cout<<sum*27211<<endl;
-    return sum;
+  cout<<sum*27211<<endl;
+  return sum;
 }
 
 /** Perturbation Calculation in eigenbasis of the 3-bit 

@@ -56,7 +56,7 @@ double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
             /r12;
     }
   }
-  //cout<<"coulomb for <"<<i<<k<<"|V_"<<I<<J<<"|"<<j<<l<<"> = "<<temp<<endl;
+  cout<<"coulomb for <"<<i<<k<<"|V_"<<I<<J<<"|"<<j<<l<<"> = "<<temp<<endl;
   return temp;
 }
 
