@@ -54,6 +54,7 @@ struct Calc{
   int istate,fstate;
   double ewindow;
   int molecules;
+  bool spin;
 };
 
 struct Mol{

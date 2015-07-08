@@ -256,8 +256,13 @@ double pertCalcElements(Molecule *mol, Coulomb coul, double *int3, double *energ
   cout<<" *** Elements of W2_SSSF *** "<<endl;
   double sum=0;
   double dum;
+  /** Sum over intermediate states **/
   for (int i=0; i<mol[0].nindices; i++) { //qb basis
     if (i==1) continue;
+    if (mol[0].spinAllowed) {
+      if (i==2 || i==3 || i==4 || i==5 )
+        continue;
+    }
       dum = coul.int3[i+1*mol[0].nindices]
           *coul.int3[6+i*mol[0].nindices];
       sum += dum/(energies[1]-energies[i]);

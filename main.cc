@@ -180,6 +180,10 @@ int main(int argc, char **argv) {
   double coupling2;
 
   switch (read.calc.itype) {
+    
+    /**************************************
+     *    FRET Calculation
+     **************************************/
     case 1:
 
       cout<<"Performing a FRET calculation now."<<endl;
@@ -187,7 +191,7 @@ int main(int argc, char **argv) {
       for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
         fretCalc(mol,coupling);
         if (r1==0)
-          cout<<"First coupling = "<<coupling*27.211396<<" meV"<<endl;
+          cout<<"First coupling = "<<coupling*27211.396<<" meV"<<endl;
         /** write the coupling to file **/
         print.appendData2d(outfile2,
             mol[1].grid[read.mol[1].mv[0].iaxis].min+r1*mol[1].grid[read.mol[1].mv[0].iaxis].dgrid,
@@ -198,14 +202,14 @@ int main(int argc, char **argv) {
         mol[1].setCom();
       }
       break;
+    
+    
+    /**************************************
+     *    Dynamics Calculation
+     **************************************/
     case 2:
+      
       double dum;
-      //gsl_matrix_view m = gsl_matrix_view_array(coul.int3,nindex,nindex);
-      //gsl_vector *eval = gsl_vector_alloc(nindex);
-      //gsl_matrix *evec = gsl_matrix_alloc(nindex,nindex);
-      //gsl_eigen_symmv_workspace *w = gsl_eigen_symmv_alloc(nindex);
-      //gsl_eigen_symmv(&m.matrix,eval,evec,w);
-
       for (int zi=0; zi<1; zi++) {
         pertCalcEigen(mol,coul,energies,int3,intham);
         propagateTime(mol,coul,energies,read.dyn.tstart,
@@ -213,11 +217,20 @@ int main(int argc, char **argv) {
 
       }
       break;
+
+      
+    /**************************************
+     *    SSSF Calculation
+     *
+     * NB This is set up for displacement 
+     * in only one direction at the moment
+     **************************************/
     case 3:
-    //NB This is set up for displacement in only one direction at the moment
-      int whichaxis = 2;
+
       bool closest = true;
-      ofstream cfile,cmfile,crossfile1,crossfile2,crossfile3,crossfile4,crossfile5,crossfile6;
+      ofstream cfile,cmfile,crossfile1;
+      ofstream crossfile2,crossfile3;
+      ofstream crossfile4,crossfile5,crossfile6;
       cfile.open("coupling-3.dat");
       if (C2_) {
         crossfile1.open("rda2-c2.dat");

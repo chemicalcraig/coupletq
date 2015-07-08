@@ -60,7 +60,7 @@ double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
   return temp;
 }
 
-/** Create coulom matrix, overloaded for windowing **/
+/** Create coulomb matrix, overloaded for windowing **/
 void createCoulomb3(Molecule *mol, Coulomb coul, double *en,Reader r) {
   for (int i=0; i<mol[0].nindices; i++) {
     for (int j=0; j<mol[0].nindices; j++) {

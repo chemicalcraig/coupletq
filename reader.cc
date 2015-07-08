@@ -24,7 +24,7 @@ const string opts_[] = {"type","ewindow","molecules",
                           "move","rotate","tddft","start",
                           "finish","steps","increment","init",
                           "populations","wincrement",
-                          "file","configuration","target"};
+                          "file","configuration","target","spin"};
 list<string> directives_(dirs_, dirs_+sizeof(dirs_)/sizeof(string));
 list<string> subdirectives_(subdirs_, subdirs_+sizeof(subdirs_)/sizeof(string));
 list<string> options_(opts_, opts_+sizeof(opts_)/sizeof(string));
@@ -79,7 +79,12 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
           /** output file name **/
           } else if (string(*it).compare(0,4,"file",0,4)==0) {
             calc.outfile = s;
-
+          /** Spin configurations **/
+          } else if (string(*it).compare(0,4,"spin",0,4)==0) {
+            if (s.compare(0,4,"true",0,4)==0)
+              calc.spin=true;
+            else
+              calc.spin=false;
           }
         }
       }

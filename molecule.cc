@@ -47,7 +47,7 @@ Molecule *initialize(Reader r) {
   for (int i=0; i<r.calc.molecules; i++) {
     mol[i].rot = new double[9];
     mol[i].rotmatcom = new double[9];
-   mol[i].nstates = r.mol[i].nstates;
+    mol[i].nstates = r.mol[i].nstates;
     mol[i].nmol = r.calc.molecules;
     mol[i].natoms = getNatoms(r.mol[i].cf[0].file,r.calc.molecules,mol);
     mol[i].atoms = new Atom[mol[i].natoms];
@@ -62,6 +62,9 @@ Molecule *initialize(Reader r) {
       mol[i].istate = r.mol[i].cf[0].i;
       mol[i].fstate = r.mol[i].cf[0].f;
     }
+    //Get spin allowed/forbidden condition
+    mol[i].spinAllowed = r.calc.spin;
+    
     //Allocate atoms and all of their densities
     //We use lower triangular form for the couplings
     for (int j=0; j<mol[i].natoms; j++) {
@@ -76,7 +79,7 @@ Molecule *initialize(Reader r) {
   
     /** Get Excitation energies from TDDFT calc **/
     getTDDFT(r.mol[i].tddftfile,&mol[i]);
-    cout<<"done with tddft stuff for mol "<<i<<endl;
+    cout<<"Done retrieving tddft information for molecule "<<i<<endl;
   }
 
   /** Set Molecular Mass **/
@@ -91,8 +94,13 @@ Molecule *initialize(Reader r) {
   return mol;
 }
 
+/*************************************
+  *** Molecule class initializer ***
+  ************************************/
 Molecule::Molecule()
 {
+  /** Set some defaults **/
+  this->spinAllowed=true;
   this->spinstate = 0;
   this->dip = new double[3];
   this->idip = new double[3];
@@ -371,6 +379,7 @@ void Molecule::setPostoInit() {
  * Copy operator
  */
 Molecule Molecule::operator=(const Molecule& other) {
+  this->spinAllowed = other.spinAllowed;
   this->natoms = other.natoms;
   this->interaction = other.interaction;
   this->groundenergy = other.groundenergy;

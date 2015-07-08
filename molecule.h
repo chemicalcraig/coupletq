@@ -14,6 +14,7 @@ using namespace std;
 
 class Molecule {
   public:
+  bool spinAllowed;
   int fstate,istate;
   int nindices;
   int *indices;

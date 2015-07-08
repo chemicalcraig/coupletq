@@ -73,7 +73,6 @@ bool getTDDFT(string str, Molecule *mol) {
             tddftstack = false;
           } //end nroots
 
-cout<<45<<" "<<mol->nroots<<endl;
           //get spin state
           if ((temps.compare(0,9,"notriplet")==0) || 
               (temps.compare(0,9,"Notriplet")==0) ||
@@ -131,7 +130,7 @@ cout<<45<<" "<<mol->nroots<<endl;
       
       //Get TDDFT information
       if (temps.compare(0,10,tddft_str,0,10) == 0) {
-cout<<"mol 2 has "<<" roots"<<endl;
+cout<<"mol has "<<mol->nroots<<" roots"<<endl;
         mol->allocateMemTddft();
         
         //Get the ground state energy
@@ -143,21 +142,24 @@ cout<<"mol 2 has "<<" roots"<<endl;
         getlines(infile,tempc,2,1000);
 
         for (int root=0; root<mol->nroots; root++) {
-          cout<<root<<" "<<mol->nroots<<endl;
+
           infile.getline(tempc,1000);
           temps = strtok(tempc," ");
           for (int i=0; i<4; i++) temps = strtok(NULL," ");
         
+
           //get energy of root
           if (root == mol->target-1) {
+            cout<<"Root "<<mol->target<<" has an energy "<<atof(temps.c_str())<<endl;
             //CTC change this for multiple excited states on each molecule
             //mol->excenergy[root+1] = atof(temps.c_str());
             mol->excenergy[1] = atof(temps.c_str());
-
           }
 
           getlines(infile,tempc,2,1000);
           //skip for triplet
+        
+          cout<<root<<" "<<mol->nroots<<endl;
         if (mol->spinstate == 0) {
           for (int k=0; k<3; k++) {
             temps = strtok(tempc," ");
