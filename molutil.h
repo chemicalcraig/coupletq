@@ -168,6 +168,12 @@ cout<<"mol has "<<mol->nroots<<" roots"<<endl;
             for (int j=0; j<3; j++) {
               for (int i=0; i<2; i++) temps = strtok(NULL," ");
                 mol->transmoment[k+j*3+root*9] = atof(temps.c_str());
+                cout<<"getting transition moment "<<atof(temps.c_str())<<endl;
+                /** set initial dipole moment **/
+                //if (k==0) {
+                //  mol->idip[j] = atof(temps.c_str());
+                //  mol->dip[j] = atof(temps.c_str());
+                //}
             }
 
             infile.getline(tempc,1000);

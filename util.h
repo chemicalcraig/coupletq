@@ -162,22 +162,34 @@ mola.atoms[j].charges[0+mola.fstate*mola.nstates] / rda;
 }
 
 /** Orientation factor between two molecules **/
-double orient(Molecule mold, Molecule mola,double *r12) {
+double orient(Molecule mold, Molecule mola,double *r12,double dist) {
   
   /** get unit vector in direction of each transition dipole vector **/
-  double dipunit1[3],dipunit2[3],temp[3];
-  
+  double dipunit1[3],dipunit2[3],temp[3],temp2[3];
+  double sum=0;
+  double sum2=0;
+
+  /** temp/temp2 are the transition dipoles **/
   for (int i=0; i<3; i++) {
-    temp[i] = mold.idip[i] + mold.com[i];
+    temp[i] = mold.transmoment[i*3+(mold.target-1)*9];
+    temp2[i] = mola.transmoment[i*3+(mola.target-1)*9];
   }
 
+  /** sum & sum2 are the transition dipole magnitudes **/
   for (int i=0; i<3; i++) {
-    dipunit1[i] = mold.dip[i] / sqrt(mold.dipmag);
-    dipunit2[i] = mola.dip[i] / sqrt(mola.dipmag);
+    sum += temp[i]*temp[i];
+    sum2 += temp2[i]*temp2[i];
+  }
+  sum = sqrt(sum);
+  sum2 = sqrt(sum2);
+
+  for (int i=0; i<3; i++) {
+    dipunit1[i] = temp[i];
+    dipunit2[i] = temp2[i];
   }
 
-  double res = cblas_ddot(3,dipunit1,1,dipunit2,1) 
-              -3* cblas_ddot(3,dipunit1,1,r12,1)*cblas_ddot(3,dipunit2,1,r12,1);
+  double res = (cblas_ddot(3,dipunit1,1,dipunit2,1)/(dist*dist*dist))
+              -3* cblas_ddot(3,dipunit1,1,r12,1)*cblas_ddot(3,dipunit2,1,r12,1)/(dist*dist*dist*dist*dist);
   return res;
 }
 
@@ -194,17 +206,34 @@ double pdaCalc(Molecule *mol, double &res) {
     diff[i] = mol[0].com[i] - mol[1].com[i];
     sum += diff[i]*diff[i];
   }
-
+  
   //normalize it
-  for (int i=0; i<3; i++) {
-    diff[i] /= sqrt(sum);
-  }
+  //for (int i=0; i<3; i++) {
+  //  diff[i] = sqrt(diff[i]*diff[i]);
+  //}
 
   /** Calculate orientation factor **/
-  double kappa = orient(mol[0],mol[1],diff);
+  double kappa = orient(mol[1],mol[0],diff,sqrt(sum));
+  
+  double temp[3],temp2[3];
+  double sum3,sum4;
+  sum3=0.;
+  sum4=0.;
+  /** temp/temp2 are the transition dipoles translated to the COM **/
+  for (int i=0; i<3; i++) {
+    temp[i] = mol[0].transmoment[i*3+(mol[0].target-1)*9];
+    temp2[i] = mol[1].transmoment[i*3+(mol[1].target-1)*9];
+  }
 
-  res = kappa * mol[1].dipmag*mol[1].dipmag / (sqrt(sum)*sum);
-  //cout<<kappa<<" "<<mol[1].dipmag<<" "<<sqrt(sum)<<endl;
+  /** sum & sum2 are the transition dipole magnitudes **/
+  for (int i=0; i<3; i++) {
+    sum3 += temp[i]*temp[i];
+    sum4 += temp2[i]*temp2[i];
+  }
+  sum3 = sqrt(sum3);
+  sum4 = sqrt(sum4);
+
+  res = kappa ;// / (sqrt(sum)*sum);
 }
 
 /**** Skip several lines in input file ****/

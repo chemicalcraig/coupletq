@@ -13,7 +13,7 @@ using namespace std;
 const string dirs_[] = {"calculation","Calculation","CALCULATION",
                       "molecule","Molecule","MOLECULE",
                       "dynamics","Dynamics","DYNAMICS",
-                      "fret","Fret","FRET"};
+                      "fret","Fret","FRET","pda","PDA","Pda"};
 const string subdirs_[] = {"charges","Charges","CHARGES",
                          "move","Move","MOVE",
                          "rotate","Rotate","ROTATE",
@@ -59,6 +59,8 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
               calc.itype = 2;
             } else if (s.compare(0,4,"fret",0,4)==0) {
               calc.itype = 1;
+            } else if (s.compare(0,4,"pda",0,4)==0) {
+              calc.itype = 4;
             } else if (s.compare(0,8,"coupling",0,8)==0) {
               calc.itype = 3;
               s=strtok(NULL," ");

@@ -37,12 +37,13 @@ int main(int argc, char **argv) {
   }
 
   mol = initialize(read);
+  
   /** Set COM before initial translation**/
   for (int i=0; i<read.calc.molecules; i++) {
     mol[i].setCom();
   }
-
-  /** set up printer and output files **/
+ 
+ /** set up printer and output files **/
   Print print(mol);
   ofstream outfile2,pdafile;
   //remove(mol[0].outputfilename.c_str());
@@ -62,13 +63,17 @@ int main(int argc, char **argv) {
   /** Set up initial conformations **/
   for (int i=0; i<read.calc.molecules; i++) {
     mol[i].setInit(read,i);
-    calcdip(mol[i]);
+    /** calculate molecular diple moment from transition charges
+     * unless pda 
+     */
+    if (read.calc.itype != 4)
+      calcdip(mol[i]);
   }
   
 /*****************  Setting up Molecular distribution ******************/
   //set initial positions
   arrangeMol(mol);
-
+ 
   /** Calculate transition dipole from charges **/
   /** This also sets the transition vector elements **/
   /** This also resets the current conformation to be the initial **/
@@ -76,7 +81,6 @@ int main(int argc, char **argv) {
     mol[i].setCom();
     mol[i].setPostoInit();
   }
-
 
   /** Print initial positions **/
   ofstream posout;
@@ -96,7 +100,7 @@ int main(int argc, char **argv) {
       posout<<endl;
     }
   }
-  
+ 
   /** Set indicies matrix **/
 
   int nindex=1;
@@ -122,7 +126,9 @@ int main(int argc, char **argv) {
   /** Create state energy matrix **/
   double energies[nindex];
   double vec[nindex],vec2[nindex];
-  if (read.calc.itype != 1) {
+
+  /** only do this if not fret or pda **/
+  if (read.calc.itype != 1 || read.calc.itype != 4) {
   for (int i=0; i<nindex; i++) {
     energies[i] = 0.;
     for (int m=0; m<mol[0].nmol; m++) {
@@ -181,9 +187,38 @@ int main(int argc, char **argv) {
 
   switch (read.calc.itype) {
     
+    
+    /**************************************
+     *    FRET Calculation with PDA
+     **************************************/
+    case 4:
+
+      
+
+      cout<<"Performing a FRET calculation using PDA now."<<endl;
+      cout<<"Coupling output written to "<<mol[0].outputfilename<<endl;
+      for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
+        pdaCalc(mol,coupling);
+        
+        if (r1==0)
+          cout<<"First coupling = "<<coupling*27211.396<<" meV"<<endl;
+        /** write the coupling to file **/
+        print.appendData2d(outfile2,
+            mol[1].grid[read.mol[1].mv[0].iaxis].min+r1*mol[1].grid[read.mol[1].mv[0].iaxis].dgrid,
+            coupling*27211.396);
+        
+        //translate acceptor
+        mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
+        mol[1].setCom();
+      }
+      break;
+    
+ 
+    
     /**************************************
      *    FRET Calculation
      **************************************/
+    
     case 1:
 
       cout<<"Performing a FRET calculation now."<<endl;
@@ -438,6 +473,9 @@ int main(int argc, char **argv) {
         }
       }
     break; //end case 3
+     
+
+  
   } //end switch
 
   return 0;
