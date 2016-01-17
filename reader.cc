@@ -399,5 +399,18 @@ Reader::Reader(string f) {
       readBlock(*it,in,molcount);
     }
   }
+  
+  /** Calculation configurations **/
+  this->calc.C1_ = false;
+  this->calc.C2_ = false;
+  this->calc.C3_ = false;
+  if (this->calc.configuration.compare(0,2,"c1",0,2)==0) {
+    this->calc.C1_=true;
+  } else if (this->calc.configuration.compare(0,2,"c2",0,2)==0) {
+    this->calc.C2_=true;
+  } else if (this->calc.configuration.compare(0,2,"c3",0,2)==0) {
+    this->calc.C3_=true;  
+  }
 
-};
+  cout<<this->calc.C1_<<endl;
+}; //end constructor

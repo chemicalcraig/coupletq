@@ -17,6 +17,9 @@ using namespace std;
 /** Kronecker Delta **/
 #define Kronecker(a,b) ((a == b ? 1 : 0))
 
+/** Print level **/
+bool DEBUG = false;
+
 /********************************************************
  * Functions
  * *******************************************************/
@@ -56,7 +59,12 @@ double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
             /r12;
     }
   }
-  cout<<"coulomb for <"<<i<<k<<"|V_"<<I<<J<<"|"<<j<<l<<"> = "<<temp<<endl;
+
+  /** print stuff **/
+  if (DEBUG) {
+   cout<<"coulomb for <"<<i<<k<<"|V_"<<I<<J<<"|"<<j<<l<<"> = "<<temp<<endl;
+  }
+  
   return temp;
 }
 
@@ -83,7 +91,9 @@ void createCoulomb3(Molecule *mol, Coulomb coul, double *en,Reader r) {
       }//end molecule 1
       //fix over counting
       coul.int3[i+j*mol[0].nindices] /= 2.;
-      cout<<"making coulomb with window "<<i<<" "<<j<<" "<<coul.int3[i+j*mol[0].nindices]<<endl;
+      if (DEBUG) {
+        cout<<"making coulomb with window "<<i<<" "<<j<<" "<<coul.int3[i+j*mol[0].nindices]<<endl;
+      }
     }//end index column
   }//end index row
 }
@@ -112,7 +122,9 @@ void createCoulomb3(Molecule *mol, Coulomb coul) {
       }//end molecule 1
       //adjust for over counting
       //coul.int3[i+j*mol[0].nindices] /= 2.;
-      cout<<"making coulomb "<<i<<" "<<j<<" "<<coul.int3[i+j*mol[0].nindices]<<endl;
+      if (DEBUG) {
+        cout<<"making coulomb "<<i<<" "<<j<<" "<<coul.int3[i+j*mol[0].nindices]<<endl;
+      }
     }//end index column
   }//end index row  
 }
@@ -164,15 +176,21 @@ mola.atoms[j].charges[0+mola.fstate*mola.nstates] / rda;
 /** Orientation factor between two molecules **/
 double orient(Molecule mold, Molecule mola,double *r12,double dist) {
   
+  /** convert distance to au **/
+  dist *= ang2au;
+
   /** get unit vector in direction of each transition dipole vector **/
-  double dipunit1[3],dipunit2[3],temp[3],temp2[3];
+  double dipunit1[4],dipunit2[4],temp[3],temp2[3];
   double sum=0;
   double sum2=0;
 
   /** temp/temp2 are the transition dipoles **/
   for (int i=0; i<3; i++) {
     temp[i] = mold.transmoment[i*3+(mold.target-1)*9];
-    temp2[i] = mola.transmoment[i*3+(mola.target-1)*9];
+    temp2[i] = mola.transmoment[i*3+(mola.target-1)*9] - mola.com[i];
+    
+    /** convert r12 to au **/
+    r12[i] *= ang2au;
   }
 
   /** sum & sum2 are the transition dipole magnitudes **/
@@ -180,16 +198,17 @@ double orient(Molecule mold, Molecule mola,double *r12,double dist) {
     sum += temp[i]*temp[i];
     sum2 += temp2[i]*temp2[i];
   }
-  sum = sqrt(sum);
-  sum2 = sqrt(sum2);
+  //sum = sqrt(sum);
+  //sum2 = sqrt(sum2);
 
   for (int i=0; i<3; i++) {
-    dipunit1[i] = temp[i];
-    dipunit2[i] = temp2[i];
+    dipunit1[i+1] = temp[i];
+    dipunit2[i+1] = temp2[i];
   }
 
   double res = (cblas_ddot(3,dipunit1,1,dipunit2,1)/(dist*dist*dist))
               -3* cblas_ddot(3,dipunit1,1,r12,1)*cblas_ddot(3,dipunit2,1,r12,1)/(dist*dist*dist*dist*dist);
+  
   return res;
 }
 
@@ -203,7 +222,7 @@ double pdaCalc(Molecule *mol, double &res) {
   
   //construct vector connecting COM's
   for (int i=0; i<3; i++) {
-    diff[i] = mol[0].com[i] - mol[1].com[i];
+    diff[i] = mol[1].com[i] - mol[0].com[i];
     sum += diff[i]*diff[i];
   }
   

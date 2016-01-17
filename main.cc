@@ -28,14 +28,8 @@ int main(int argc, char **argv) {
   
   /** Read input com file **/
   Reader read(argv[1]);
-  if (read.calc.configuration.compare(0,2,"c1",0,2)==0) {
-    C1_=true;
-  } else if (read.calc.configuration.compare(0,2,"c2",0,2)==0) {
-    C2_=true;
-  } else if (read.calc.configuration.compare(0,2,"c3",0,2)==0) {
-    C3_=true;  
-  }
 
+  /** Initialize molecules **/
   mol = initialize(read);
   
   /** Set COM before initial translation**/
@@ -46,7 +40,6 @@ int main(int argc, char **argv) {
  /** set up printer and output files **/
   Print print(mol);
   ofstream outfile2,pdafile;
-  //remove(mol[0].outputfilename.c_str());
   outfile2.open(mol[0].outputfilename.c_str());
   outfile2.precision(16);
 
@@ -64,7 +57,7 @@ int main(int argc, char **argv) {
   for (int i=0; i<read.calc.molecules; i++) {
     mol[i].setInit(read,i);
     /** calculate molecular diple moment from transition charges
-     * unless pda 
+     * unless pda (calc type=4)
      */
     if (read.calc.itype != 4)
       calcdip(mol[i]);
@@ -82,7 +75,7 @@ int main(int argc, char **argv) {
     mol[i].setPostoInit();
   }
 
-  /** Print initial positions **/
+  /** Print initial positions in xyz format **/
   ofstream posout;
   posout.open("initpos.xyz");
   int totalAtoms = 0;
@@ -101,7 +94,7 @@ int main(int argc, char **argv) {
     }
   }
  
-  /** Set indicies matrix **/
+  /** Set indicies matrix (for SSSF) **/
 
   int nindex=1;
 
@@ -115,9 +108,10 @@ int main(int argc, char **argv) {
   mol[0].nindices = nindex;
   setIndices(mol,mol[0].nmol,nindex);
   cout<<"** State indices **"<<endl;
-  for (int i=0; i<nindex; i++) 
+/*  for (int i=0; i<nindex; i++) 
     for (int j=0; j<mol[0].nmol; j++) 
       cout<<"ket "<<i<<" mol "<<j<<" = "<<mol[0].indices[j+i*mol[0].nmol]<<endl;
+*/
 
   /** Create Coulomb Matrix **/
   double temp[nindex*nindex],temp2[nindex*nindex];
@@ -165,13 +159,15 @@ int main(int argc, char **argv) {
   double sum = 0.;
   for (int i=0; i<nindex; i++) {
     sum = 0.;
-    cout<<"evals "<<i<<" "<<gsl_vector_get(eval,i)<<endl;
+    if (read.calc.itype != 4)
+      cout<<"evals "<<i<<" "<<gsl_vector_get(eval,i)<<endl;
     coul.evals3[i] = gsl_vector_get(eval,i);
     //cout<<"evals "<<i<<" "<<coul.evals3[i]<<endl;
     for (int j=0; j<nindex; j++) {
       sum += coul.int3[i+j*nindex]*vec[j];
       coul.evecs3[i+j*nindex] = gsl_matrix_get(evec,i,j);
-      cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*nindex]<<endl;
+      if (read.calc.itype != 4)
+        cout<<"evecs "<<i<<" "<<j<<" "<<coul.evecs3[i+j*nindex]<<endl;
     }
   }
   }
@@ -191,10 +187,9 @@ int main(int argc, char **argv) {
     /**************************************
      *    FRET Calculation with PDA
      **************************************/
+    
     case 4:
-
       
-
       cout<<"Performing a FRET calculation using PDA now."<<endl;
       cout<<"Coupling output written to "<<mol[0].outputfilename<<endl;
       for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
@@ -202,10 +197,11 @@ int main(int argc, char **argv) {
         
         if (r1==0)
           cout<<"First coupling = "<<coupling*27211.396<<" meV"<<endl;
+          
         /** write the coupling to file **/
         print.appendData2d(outfile2,
-            mol[1].grid[read.mol[1].mv[0].iaxis].min+r1*mol[1].grid[read.mol[1].mv[0].iaxis].dgrid,
-            coupling*27211.396);
+          mol[1].grid[read.mol[1].mv[0].iaxis].min+r1*mol[1].grid[read.mol[1].mv[0].iaxis].dgrid,
+          coupling*27211.396);
         
         //translate acceptor
         mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
@@ -213,10 +209,9 @@ int main(int argc, char **argv) {
       }
       break;
     
- 
     
     /**************************************
-     *    FRET Calculation
+     *    FRET Calculation using tq's
      **************************************/
     
     case 1:
@@ -267,10 +262,10 @@ int main(int argc, char **argv) {
       ofstream crossfile2,crossfile3;
       ofstream crossfile4,crossfile5,crossfile6;
       cfile.open("coupling-3.dat");
-      if (C2_) {
+      if (read.calc.C2_) {
         crossfile1.open("rda2-c2.dat");
         crossfile4.open("ra1a2-c2.dat");
-      } else if (C1_) {
+      } else if (read.calc.C1_) {
         crossfile3.open("ra1a2-c1.dat");
         crossfile4.open("rda1da2-c1.dat");
       }
@@ -312,7 +307,7 @@ int main(int argc, char **argv) {
         molc[1].setCom();
 
 
-      if (!C3_) {
+      if (!read.calc.C3_) {
         //molc[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[1].mv[0].iaxis].dgrid);
         //molc[1].setCom();
         molc[2].resetall();
@@ -324,7 +319,7 @@ int main(int argc, char **argv) {
       }
       m2start=molc[2].com[read.mol[2].mv[0].iaxis];
       for (int r2=0; r2<read.mol[2].mv[0].steps; r2++) {
-        if (C1_) {
+        if (read.calc.C1_) {
           posMol2 = molc[1].icom[read.mol[1].mv[0].iaxis] 
                   + r1*molc[1].grid[read.mol[1].mv[0].iaxis].dgrid
                   + minsep;
@@ -374,7 +369,7 @@ int main(int argc, char **argv) {
       /** Write the coupling to file **/
 //CTCs Change printing conditions for different configurations
 //C1 - Prints DA1, DA1A2, J
-      if (C1_) {
+      if (read.calc.C1_) {
         //appendData3d(cfile,
         //        mol[1].com[read.mol[1].mv[0].iaxis],
         //        mol[2].com[read.mol[2].mv[0].iaxis]-mol[1].com[read.mol[1].mv[0].iaxis],
@@ -383,7 +378,7 @@ int main(int argc, char **argv) {
         pos2[r2] = /*molc[2].com[read.mol[2].mv[0].iaxis]*/posMol2-molc[1].com[read.mol[1].mv[0].iaxis];
         sssfCoupling[r1+r2*read.mol[1].mv[0].steps] = 
       pertCalcElements(molc,coulc,int3,energies);//intham[read.calc.istate + read.calc.fstate*mol[0].nindices];
-      } else if (C2_) {
+      } else if (read.calc.C2_) {
 //C2 - Prints DA1, DA2, J
         pos1[r1] = posMol1;
         pos2[r2] = posMol2;
@@ -394,7 +389,7 @@ int main(int argc, char **argv) {
                 mol[2].com[read.mol[2].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
       */
-      } else if (C3_) {
+      } else if (read.calc.C3_) {
 //C3 - Prints DA1_i, A1A2_j
         print.appendData3d(cfile,
                 mol[1].com[read.mol[1].mv[0].iaxis],
@@ -403,7 +398,7 @@ int main(int argc, char **argv) {
       }
       
       /** Write the closest approach cross section in each direction **/
-      if (C2_ && (mol[1].com[read.mol[1].mv[0].iaxis]==mol[1].icom[read.mol[1].mv[0].iaxis])) {
+      if (read.calc.C2_ && (mol[1].com[read.mol[1].mv[0].iaxis]==mol[1].icom[read.mol[1].mv[0].iaxis])) {
         /** For use with C2, this prints DA2 **/
         print.appendData2d(crossfile1,mol[2].com[read.mol[2].mv[0].iaxis],
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
@@ -414,7 +409,7 @@ int main(int argc, char **argv) {
                 intham[read.calc.istate + read.calc.fstate*mol[0].nindices]);
         closest = false;
       }
-      if (C1_ ) {
+      if (read.calc.C1_ ) {
         if (mol[1].com[read.mol[1].mv[0].iaxis]==mol[1].icom[read.mol[1].mv[0].iaxis]) {
           /** For use with C1, this prints A1A2 for closest DA1 **/
           print.appendData2d(crossfile3,mol[2].com[read.mol[2].mv[0].iaxis]-mol[1].com[read.mol[1].mv[0].iaxis],
@@ -426,7 +421,7 @@ int main(int argc, char **argv) {
                 sssfCoupling[r1+r2*read.mol[1].mv[0].steps]);
         }
       }
-      if (C2_ && (r1==r2)) {
+      if (read.calc.C2_ && (r1==r2)) {
         /** For use with C2, this prints A1=A2 **/
         print.appendData2d(crossfile4,molc[1].com[read.mol[1].mv[0].iaxis],
                 sssfCoupling[r1+r2*read.mol[1].mv[0].steps]);
@@ -434,7 +429,7 @@ int main(int argc, char **argv) {
       /** Move molecule 2 **/
       //molc[2].translate(read.mol[2].mv[0].iaxis,molc[2].grid[read.mol[2].mv[0].iaxis].dgrid);
       /** If configuration 3, then move molecule one the same amount **/
-      if (C3_) {
+      if (read.calc.C3_) {
         mol[1].translate(read.mol[1].mv[0].iaxis,mol[1].grid[read.mol[2].mv[0].iaxis].dgrid);
       }
      
@@ -448,7 +443,7 @@ int main(int argc, char **argv) {
       //print.appendData2d(cmfile,mol[2].com[0],mol[1].com[0]);
     }//end move 2
 
-    if (C3_) {
+    if (read.calc.C3_) {
       mol[1].resetExcept(read.mol[1].mv[1].iaxis);
       mol[2].resetExcept(read.mol[2].mv[1].iaxis);
       

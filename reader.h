@@ -25,6 +25,7 @@ struct ChargeFile {
   string file;
 };
 
+/** Move a molecule **/
 struct Move {
   string axis;
   int iaxis;
@@ -32,11 +33,13 @@ struct Move {
   int steps;
 };
 
+/** Rotate a molecule **/
 struct Rot {
   string axis;
   double theta;
 };
 
+/** Initially populated state, for dynamics **/
 struct InitPop {
   int mol, state;
   double population;
@@ -47,6 +50,7 @@ struct Output {
   string file;
 };
 
+/** Calculation details **/
 struct Calc{
 /** Calculation Stack **/
   string type,configuration,outfile;
@@ -55,6 +59,10 @@ struct Calc{
   double ewindow;
   int molecules;
   bool spin;
+  //Configurational stuff
+  bool C1_;//=false;
+  bool C2_;//=false;
+  bool C3_;//=false;
 };
 
 struct Mol{
