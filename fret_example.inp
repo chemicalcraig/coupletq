@@ -1,0 +1,31 @@
+#Exciton transfer calculation
+
+calculation
+  type fret
+  molecules 2
+  file fret.dat
+end
+
+molecule
+  states 2
+  target 2
+  charges 
+    0 1 densoutput.dat
+  end
+#  tddft tetracene-1.out
+end
+
+molecule
+  states 2
+  target 2
+  charges 
+    0 1 densoutput.dat
+  end
+  move
+    z 4 50 100
+  end
+#  tddft tetracene-1.out
+#  rotate
+#    z .785
+#  end
+end

@@ -85,6 +85,7 @@ bool getTDDFT(string str, Molecule *mol) {
           if ((temps.compare(0,9,"nosinglet")==0) || 
               (temps.compare(0,9,"Nosinglet")==0) ||
               (temps.compare(0,9,"NOSINGLET")==0) ||
+              (temps.compare(0,9,"triplet")==0)   ||
               (temps.compare(0,9,"NoSinglet")==0)) {
             mol->spinstate = 1;
             cout<<"Spin state = "<<mol->spinstate<<endl;
@@ -130,7 +131,6 @@ bool getTDDFT(string str, Molecule *mol) {
       
       //Get TDDFT information
       if (temps.compare(0,10,tddft_str,0,10) == 0) {
-cout<<"mol has "<<mol->nroots<<" roots"<<endl;
         mol->allocateMemTddft();
         
         //Get the ground state energy
@@ -144,10 +144,14 @@ cout<<"mol has "<<mol->nroots<<" roots"<<endl;
         for (int root=0; root<mol->nroots; root++) {
 
           infile.getline(tempc,1000);
+cout<<150<<temps<<endl;          
           temps = strtok(tempc," ");
+          
+cout<<150<<" molutil.h"<<endl;
           for (int i=0; i<4; i++) temps = strtok(NULL," ");
         
 
+cout<<150<<" molutil.h"<<endl;
           //get energy of root
           if (root == mol->target-1) {
             cout<<"Root "<<mol->target<<" has an energy "<<atof(temps.c_str())<<endl;

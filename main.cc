@@ -113,6 +113,7 @@ int main(int argc, char **argv) {
       cout<<"ket "<<i<<" mol "<<j<<" = "<<mol[0].indices[j+i*mol[0].nmol]<<endl;
 */
 
+
   /** Create Coulomb Matrix **/
   double temp[nindex*nindex],temp2[nindex*nindex];
   Coulomb coul(nindex);
@@ -122,7 +123,7 @@ int main(int argc, char **argv) {
   double vec[nindex],vec2[nindex];
 
   /** only do this if not fret or pda **/
-  if (read.calc.itype != 1 || read.calc.itype != 4) {
+  if ((read.calc.itype != 1) && (read.calc.itype != 4)) {
   for (int i=0; i<nindex; i++) {
     energies[i] = 0.;
     for (int m=0; m<mol[0].nmol; m++) {
@@ -135,7 +136,6 @@ int main(int argc, char **argv) {
 
   /** Create unfiltered Coulomb matrix **/
   createCoulomb3(mol,coul);
- 
   /** Filter Coulomb Matrix for energy conservation **/
   for (int i=0; i<nindex; i++) {
     //coul.int3[i+i*nindex] += energies[i];
@@ -192,9 +192,9 @@ int main(int argc, char **argv) {
       
       cout<<"Performing a FRET calculation using PDA now."<<endl;
       cout<<"Coupling output written to "<<mol[0].outputfilename<<endl;
+      
       for (int r1=0; r1<read.mol[1].mv[0].steps; r1++) {
         pdaCalc(mol,coupling);
-        
         if (r1==0)
           cout<<"First coupling = "<<coupling*27211.396<<" meV"<<endl;
           
