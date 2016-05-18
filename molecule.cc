@@ -7,7 +7,7 @@
 void Molecule::setInit(Reader r, int i) {
   int ta,ra;
 
-    /** Translations **/
+    /** Translations, sets up grid **/
     for (int j=0; j<r.mol[i].nmov; j++) {
       if (r.mol[i].mv[j].axis.compare(0,1,"x",0,1)==0) {
         ta = 0;
@@ -19,10 +19,10 @@ void Molecule::setInit(Reader r, int i) {
       
       this->grid[ta].setParams(r.mol[i].mv[j].min,r.mol[i].mv[j].max,r.mol[i].mv[j].steps);
     } //end translations
-     
-     /** Rotations **/
+
+     /** Rotations, rotates molecule before translations **/
     for (int j=0; j<r.mol[i].nrot; j++) {
-    cout<<"rotating"<<endl;
+      cout<<"rotating molecule "<<i<<endl;
       if (r.mol[i].rot[j].axis.compare(0,1,"x",0,1)==0) {
         ra = 0;
       } else if (r.mol[i].rot[j].axis.compare(0,1,"y",0,1)==0) {
@@ -32,6 +32,12 @@ void Molecule::setInit(Reader r, int i) {
       }
       this->rotateTheta(r.mol[i].rot[j].theta,ra);
     } //end rotations
+
+    /** Scaling **/
+    if (r.mol[i].scaleMol) {
+      cout<<"scaling molecule "<<i<<" by "<<r.mol[i].sf<<" X"<<endl;
+      this->scaleR(r.mol[i].sf);
+    }
 }
 
 /****************************************
@@ -70,7 +76,9 @@ Molecule *initialize(Reader r) {
     for (int j=0; j<mol[i].natoms; j++) {
       mol[i].atoms[j].allocateCharges(r.mol[i].nstates*r.mol[i].nstates);
     }
+    cout<<"Getting transition charges for molecule "<<i<<endl;
     /** Get the transition charges **/
+    /** This also sets initial positions **/
     for (int j=0; j<r.mol[i].ncharges; j++) {
       getCharges(r.mol[i].cf[j].file,&mol[i],
                 r.mol[i].nstates,r.mol[i].cf[j].i,
@@ -325,6 +333,32 @@ void Molecule::translate(const int which, double howmuch) {
       //this->com[2] += howmuch;
       //this->dip[2] += howmuch;
       break;
+  }
+  this->setCom();
+}
+
+/** Scale molecule by a factor 's' **/
+void Molecule::scaleR(double s) {
+  for (int i=0; i<this->natoms; i++) {
+    this->atoms[i].spos[0] *= s;
+    //set cartesian from new r
+    //adj adjusts for negative x in transformation
+    int adj = 1;
+    if (atoms[i].pos[0] < 0)
+      adj = -1;
+
+    this->atoms[i].pos[0] = adj*this->atoms[i].spos[0]
+                            * sin(this->atoms[i].spos[1])
+                            * cos(this->atoms[i].spos[2]);
+    this->atoms[i].pos[1] = adj*this->atoms[i].spos[0]
+                            * sin(this->atoms[i].spos[1])
+                            * sin(this->atoms[i].spos[2]);
+    this->atoms[i].pos[2] = this->atoms[i].spos[0]
+                            * cos(this->atoms[i].spos[1]);
+    this->atoms[i].ipos[0] = this->atoms[i].pos[0]; 
+    this->atoms[i].ipos[1] = this->atoms[i].pos[1]; 
+    this->atoms[i].ipos[2] = this->atoms[i].pos[2];
+  
   }
   this->setCom();
 }

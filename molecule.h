@@ -36,6 +36,7 @@ class Molecule {
   void rotateTheta(double theta, int axis); //subroutine to rotate molecule
   void rotateCom(double theta, double *cm); //rotate molecule about intermolecular COM vector
   void translate(const int which, double howmuch);//translate molecule
+  void scaleR(double s); //scale molecule size
   void resetExcept(int keep);
   void setPostoInit();
   void resetall();

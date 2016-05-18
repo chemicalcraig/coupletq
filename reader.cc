@@ -24,7 +24,8 @@ const string opts_[] = {"type","ewindow","molecules",
                           "move","rotate","tddft","start",
                           "finish","steps","increment","init",
                           "populations","wincrement",
-                          "file","configuration","target","spin"};
+                          "file","configuration","target","spin",
+                          "scale_r"};
 list<string> directives_(dirs_, dirs_+sizeof(dirs_)/sizeof(string));
 list<string> subdirectives_(subdirs_, subdirs_+sizeof(subdirs_)/sizeof(string));
 list<string> options_(opts_, opts_+sizeof(opts_)/sizeof(string));
@@ -99,6 +100,9 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
       (s1.compare(0,4,"MOLECULE",0,4) == 0)) {
     mol[molcount].nmov = 0;
     mol[molcount].nrot = 0;
+    mol[molcount].nscale = 0;
+    mol[molcount].scaleMol = false;
+    mol[molcount].sf = 1.0;
     while (s2.compare(0,3,"end",0,3) != 0) {
       string which="mol";
       in>>ws;
@@ -120,6 +124,9 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
             mol[molcount].tddftfile = s;
           } else if (string(*it).compare(0,6,"target",0,6)==0) {
             mol[molcount].target = atoi(s.c_str());
+          } else if (string(*it).compare(0,7,"scale_r",0,7)==0) {
+            mol[molcount].sf = atof(s.c_str());
+            mol[molcount].scaleMol = true;
           }
         }
       }
@@ -207,9 +214,7 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
         in.getline(c,1000);
         s=c;
         if (s.compare(0,1,"#",0,1)==0) {
-          //cout<<"line commented "<<s<<endl;
           nc++;
-          //cout<<"nc = "<<endl;
         }
         n++;
       }
@@ -248,10 +253,15 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
     /** rotate **/
     if (s1.compare(0,6,"rotate",0,6) == 0) {
       int n=-1;
+      int nc=0;
       while(s.compare(0,3,"end",0,3)!=0) {
         in>>ws;
         in.getline(c,1000);
         s=c;
+        if (s.compare(0,1,"#",0,1)==0) {
+          nc++;
+          continue;
+        }
         n++;
       }
       in.seekg(pos);
@@ -411,6 +421,6 @@ Reader::Reader(string f) {
   } else if (this->calc.configuration.compare(0,2,"c3",0,2)==0) {
     this->calc.C3_=true;  
   }
-
   cout<<this->calc.C1_<<endl;
+
 }; //end constructor

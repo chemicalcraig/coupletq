@@ -44,7 +44,7 @@ class Atom {
   int *basisfuncs;
   string type;
   double x,y,z;
-  double r;
+  double spos[3]; //spherical coords: r, theta, phi
   double tq,tqindo;
   double charge;
   double *charges;

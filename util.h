@@ -50,6 +50,9 @@ double getCoulomb(Molecule *mol, int I, int J, int i, int j, int k, int l) {
       }
       r12 = cblas_ddot(3,pos,1,pos,1);
       r12 = sqrt(r12);
+
+      //CTC scaling
+      //r12 /= 3.375;
       
       //convert from angstroms to a0
       r12 /= 0.529177249;
@@ -159,13 +162,17 @@ double computeCoupling(Molecule mold, Molecule mola,int dcharge, int acharge) {
           *(mold.atoms[i].pos[k] - mola.atoms[j].pos[k]);
       }
       double rda = sqrt(rda2);
+      
+      //CTC scaling
+      //rda /= 3.375;
+      
       //convert from angstroms to a0
       rda *= 1.889725988579;
-      //cout<<i<<" "<<j<<" "<<rda<<" r12 "<<endl;
-      //cout<<"charges "<<mold.atoms[i].charges[dcharge]<<" "<<mola.atoms[j].charges[acharge]<<endl;
       
-      interaction = mold.atoms[i].charges[0+mold.fstate*mold.nstates] *
-mola.atoms[j].charges[0+mola.fstate*mola.nstates] / rda;
+      interaction = //85 * 
+                    mold.atoms[i].charges[0+mold.fstate*mold.nstates]
+                      * mola.atoms[j].charges[0+mola.fstate*mola.nstates] 
+                      / (rda );
       //interaction = mold.atoms[i].charges[dcharge] * mola.atoms[j].charges[acharge] / rda;
       res += interaction;
     }

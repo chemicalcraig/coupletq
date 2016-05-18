@@ -144,14 +144,9 @@ bool getTDDFT(string str, Molecule *mol) {
         for (int root=0; root<mol->nroots; root++) {
 
           infile.getline(tempc,1000);
-cout<<150<<temps<<endl;          
           temps = strtok(tempc," ");
           
-cout<<150<<" molutil.h"<<endl;
           for (int i=0; i<4; i++) temps = strtok(NULL," ");
-        
-
-cout<<150<<" molutil.h"<<endl;
           //get energy of root
           if (root == mol->target-1) {
             cout<<"Root "<<mol->target<<" has an energy "<<atof(temps.c_str())<<endl;
@@ -247,7 +242,7 @@ void getCharges(string filename, Molecule *mol, int nstates, int a, int b) {
   char tempc[1000];
   string temps;
   
-  //skip natoms and energy on first two lines
+  //skip natoms on first line
   infile.getline(tempc,1000);
   
   for (int j=0; j<mol->natoms; j++) {
@@ -266,9 +261,15 @@ void getCharges(string filename, Molecule *mol, int nstates, int a, int b) {
     mol->atoms[j].ipos[2] = atof(temps.c_str());
     temps = strtok(NULL," ");
     
-    mol->atoms[j].charges[a+b*nstates] = atof(temps.c_str());
-    mol->atoms[j].charges[b+a*nstates] = atof(temps.c_str());
+    //CTC
+    mol->atoms[j].charges[a+b*nstates] = atof(temps.c_str());//3.375*3.375;
+    mol->atoms[j].charges[b+a*nstates] = atof(temps.c_str());//*3.375*3.375;
 
+    mol->atoms[j].spos[0] = sqrt(mol->atoms[j].pos[0]*mol->atoms[j].pos[0]
+                                 + mol->atoms[j].pos[1]*mol->atoms[j].pos[1] 
+                                 + mol->atoms[j].pos[2]*mol->atoms[j].pos[2]);
+    mol->atoms[j].spos[1] = acos(mol->atoms[j].pos[2]/mol->atoms[j].spos[0]);
+    mol->atoms[j].spos[2] = atan(mol->atoms[j].pos[1]/mol->atoms[j].pos[0]);
     //CTCs change sign of transition charges
    //if (a!=b) {
    //  mol->atoms[j].charges[a+b*nstates] *= -1.;

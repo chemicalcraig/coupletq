@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
           cout<<"First coupling = "<<coupling*27211.396<<" meV"<<endl;
         /** write the coupling to file **/
         print.appendData2d(outfile2,
-            mol[1].grid[read.mol[1].mv[0].iaxis].min+r1*mol[1].grid[read.mol[1].mv[0].iaxis].dgrid,
+            mol[1].grid[read.mol[1].mv[0].iaxis].min+r1*mol[1].grid[read.mol[1].mv[0].iaxis].dgrid ,//* 4.5,
             coupling*27211.396);
         
         //translate acceptor

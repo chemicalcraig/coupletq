@@ -25,6 +25,13 @@ struct ChargeFile {
   string file;
 };
 
+/** Scale a molecule **/
+struct Scale {
+  double origin[3];
+  double scale;
+  bool scale_bool;
+};
+
 /** Move a molecule **/
 struct Move {
   string axis;
@@ -59,6 +66,7 @@ struct Calc{
   double ewindow;
   int molecules;
   bool spin;
+
   //Configurational stuff
   bool C1_;//=false;
   bool C2_;//=false;
@@ -72,11 +80,15 @@ struct Mol{
   int ncharges;
   int nmov;
   int nrot;
+  int nscale;
   int target;
   ChargeFile *cf;
   Move *mv;
   Rot *rot;
+  Scale *sc;
   string tddftfile;
+  bool scaleMol;
+  double sf;
 };
 
 struct Dyn{
