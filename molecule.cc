@@ -46,6 +46,7 @@ void Molecule::setInit(Reader r, int i) {
 Molecule *initialize(Reader r) {
 
   /** Declare Molecule **/
+
   Molecule * mol = new Molecule[r.calc.molecules];
   mol[0].outputfilename = r.calc.outfile;
 
@@ -64,7 +65,7 @@ Molecule *initialize(Reader r) {
     } else {
       mol[i].target = 1;
     }
-    if (r.calc.itype==1) {
+    if (r.calc.itype==1 || r.calc.itype==5) {
       mol[i].istate = r.mol[i].cf[0].i;
       mol[i].fstate = r.mol[i].cf[0].f;
     }
@@ -76,13 +77,19 @@ Molecule *initialize(Reader r) {
     for (int j=0; j<mol[i].natoms; j++) {
       mol[i].atoms[j].allocateCharges(r.mol[i].nstates*r.mol[i].nstates);
     }
-    cout<<"Getting transition charges for molecule "<<i<<endl;
+    cout<<"Getting transition charges for molecule "<<i+1<<endl;
     /** Get the transition charges **/
     /** This also sets initial positions **/
     for (int j=0; j<r.mol[i].ncharges; j++) {
-      getCharges(r.mol[i].cf[j].file,&mol[i],
+      if (r.calc.itype != 5) {
+        getCharges(r.mol[i].cf[j].file,&mol[i],
                 r.mol[i].nstates,r.mol[i].cf[j].i,
                 r.mol[i].cf[j].f);
+      } else {
+        getCharges(r.mol[i].cf[j].file,&mol[i],
+                r.mol[i].nstates,r.mol[i].cf[j].i,
+                r.mol[i].cf[j].f,r.mol[i].cf[0].spin);
+       }
     } //end tq retrieval
   
     /** Get Excitation energies from TDDFT calc **/

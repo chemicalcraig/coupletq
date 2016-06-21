@@ -1,7 +1,7 @@
 #ifndef READER_H
 #define READER_H
 /****************************************************
- * The reader class parses an exciton com file
+ * The reader class parses an coupletq com file
  * and sets up the appropriate calculation
  *
  * See README for appropriate format and 
@@ -23,6 +23,7 @@ using namespace std;
 struct ChargeFile {
   int i,f;
   string file;
+  string spin;
 };
 
 /** Scale a molecule **/

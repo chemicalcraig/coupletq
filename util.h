@@ -4,6 +4,7 @@
 #define ang2au 1.889725989;
 
 #include <cstring>
+#include <cmath>
 #include <vector>
 #include <fstream>
 #include <iostream>
@@ -23,6 +24,24 @@ bool DEBUG = false;
 /********************************************************
  * Functions
  * *******************************************************/
+/** Calculates the absolute transition charge difference between
+ * different excited states */
+
+double *projecttq(Molecule *mol) {
+  /** atom by atom **/
+  double sum = 0;
+  double *temp = new double[mol[0].natoms];
+  for (int i=0; i<mol[0].natoms; i++) {
+    double proj;
+
+      proj = abs((mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates]
+                      - mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates])
+                      );// mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates]);
+    temp[i] = proj;
+  }
+  return temp;
+}
+
 /** window function **/
 double window(double center, double value, double delta, int which) {
   switch (which) {

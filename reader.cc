@@ -13,7 +13,8 @@ using namespace std;
 const string dirs_[] = {"calculation","Calculation","CALCULATION",
                       "molecule","Molecule","MOLECULE",
                       "dynamics","Dynamics","DYNAMICS",
-                      "fret","Fret","FRET","pda","PDA","Pda"};
+                      "fret","Fret","FRET","pda","PDA","Pda",
+                      "projection","Projection"};
 const string subdirs_[] = {"charges","Charges","CHARGES",
                          "move","Move","MOVE",
                          "rotate","Rotate","ROTATE",
@@ -53,7 +54,19 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
           //readSubBlock(which,*it2,in);
         } else {
           s=strtok(NULL," ");
-          /** calc type **/
+          /************************************************************
+          *  Determine calculation type
+          *
+          *   Current options are:
+          *
+          * "pert" - exciton dynamics, not fully tested, most likely broken
+          * "fret" - FRET coupling using transition charges, works
+          * "sssf" - Space-separated singlet fission, works
+          * "pda"  - FRET w/ point dipole approx., works
+          * "projection"  - Calculate relative difference between 
+          *                 two collections of transition charges
+          * **********************************************************/
+
           if (string(*it).compare(0,4,"type",0,4)==0) {
             calc.type = s;
             if (s.compare(0,4,"pert",0,4)==0) {
@@ -62,7 +75,10 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
               calc.itype = 1;
             } else if (s.compare(0,4,"pda",0,4)==0) {
               calc.itype = 4;
-            } else if (s.compare(0,8,"coupling",0,8)==0) {
+            } else if (s.compare(0,10,"projection",0,10)==0) {
+              calc.itype = 5;
+            } else if ((s.compare(0,8,"coupling",0,8)==0) 
+              || (s.compare(0,4,"sssf",0,4) == 0)) {
               calc.itype = 3;
               s=strtok(NULL," ");
               calc.istate = atoi(s.c_str());
@@ -82,7 +98,7 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
           /** output file name **/
           } else if (string(*it).compare(0,4,"file",0,4)==0) {
             calc.outfile = s;
-          /** Spin configurations **/
+          /** Enforce spin restrictions? **/
           } else if (string(*it).compare(0,4,"spin",0,4)==0) {
             if (s.compare(0,4,"true",0,4)==0)
               calc.spin=true;
@@ -117,7 +133,17 @@ void Reader::readBlock(string s1, ifstream &in, int molcount) {
           readSubBlock(which,*it2,in,molcount);
         } else {
           s=strtok(NULL," ");
-          /** calc type **/
+          /********************************************************
+          * calculation options and input 
+          *
+          * Options are:
+          * "states"  - number of tddft roots in NWChem calculation,
+          *             used in sssf
+          * "tddft"   - NWChem output file from a TDDFT calculation
+          * "target"  - target tddft excited state in sssf
+          * "scale_r" - for debugging, scale the separation between
+          *             chromophores
+          *******************************************************/
           if (string(*it).compare(0,6,"states",0,6)==0) {
             mol[molcount].nstates = atoi(s.c_str());
           } else if (string(*it).compare(0,5,"tddft",0,5)==0) {
@@ -182,12 +208,21 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
     /** charges **/
     if (s1.compare(0,7,"charges",0,7) == 0) {
       int n=-1;
+      /** count the number of transition charge
+       * files being input, don't count anything else 
+       * get which set of spin charges to use for 
+       * projection calculation,
+       * options are: alpha, beta, and total, default total
+       * spin is not implemented in sssf or fret yet */
       while(s.compare(0,3,"end",0,3)!=0) {
         in>>ws;
         in.getline(c,1000);
         s=c;
+        if (s.compare(0,4,"spin",0,4) == 0)
+          continue;
         n++;
       }
+
       in.seekg(pos);
       mol[molcount].cf = new ChargeFile[n];
       mol[molcount].ncharges = n;
@@ -195,11 +230,17 @@ void Reader::readSubBlock(string which,string s1, ifstream &in,int molcount) {
         in>>ws;
         in.getline(c,1000);
         s=strtok(c," ");
-        mol[molcount].cf[i].i = atoi(s.c_str());
-        s=strtok(NULL," ");
-        mol[molcount].cf[i].f = atoi(s.c_str());
-        s=strtok(NULL," ");
-        mol[molcount].cf[i].file = s;
+        if (s.compare(0,4,"spin",0,4)==0) {
+          s=strtok(NULL," ");
+          mol[molcount].cf[0].spin = s;
+          i--;
+        } else {
+          mol[molcount].cf[i].i = atoi(s.c_str());
+          s=strtok(NULL," ");
+          mol[molcount].cf[i].f = atoi(s.c_str());
+          s=strtok(NULL," ");
+          mol[molcount].cf[i].file = s;
+        }
       }
       in.getline(c,1000);
     } //end charges
@@ -421,6 +462,5 @@ Reader::Reader(string f) {
   } else if (this->calc.configuration.compare(0,2,"c3",0,2)==0) {
     this->calc.C3_=true;  
   }
-  cout<<this->calc.C1_<<endl;
 
 }; //end constructor

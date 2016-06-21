@@ -51,6 +51,7 @@ class Atom {
   double mass;
   double pos[3];
   double ipos[3];
+  double tqoverlap;
 
   void allocateCharges(const int n) {this->charges = new double[n];};
   

@@ -235,6 +235,8 @@ int getNatoms(string filename, int nmol, Molecule *mol) {
 
 /*************************************
  * Retrieve Transition Charges 
+ * Overloaded for projection w/ 
+ * alpha/beta spins
  * **********************************/
 void getCharges(string filename, Molecule *mol, int nstates, int a, int b) {
   ifstream infile;
@@ -250,6 +252,8 @@ void getCharges(string filename, Molecule *mol, int nstates, int a, int b) {
     temps = strtok(tempc," ");
     temps = strtok(NULL," ");
     mol->atoms[j].type = temps;
+
+    /** Get atomic positions **/
     temps = strtok(NULL," ");
     mol->atoms[j].pos[0] = atof(temps.c_str());
     mol->atoms[j].ipos[0] = atof(temps.c_str());
@@ -261,23 +265,63 @@ void getCharges(string filename, Molecule *mol, int nstates, int a, int b) {
     mol->atoms[j].ipos[2] = atof(temps.c_str());
     temps = strtok(NULL," ");
     
-    //CTC
-    mol->atoms[j].charges[a+b*nstates] = atof(temps.c_str());//3.375*3.375;
-    mol->atoms[j].charges[b+a*nstates] = atof(temps.c_str());//*3.375*3.375;
-
+    /** Get the charges **/
+    mol->atoms[j].charges[a+b*nstates] = atof(temps.c_str());
+    mol->atoms[j].charges[b+a*nstates] = atof(temps.c_str());
+  
     mol->atoms[j].spos[0] = sqrt(mol->atoms[j].pos[0]*mol->atoms[j].pos[0]
                                  + mol->atoms[j].pos[1]*mol->atoms[j].pos[1] 
                                  + mol->atoms[j].pos[2]*mol->atoms[j].pos[2]);
     mol->atoms[j].spos[1] = acos(mol->atoms[j].pos[2]/mol->atoms[j].spos[0]);
     mol->atoms[j].spos[2] = atan(mol->atoms[j].pos[1]/mol->atoms[j].pos[0]);
-    //CTCs change sign of transition charges
-   //if (a!=b) {
-   //  mol->atoms[j].charges[a+b*nstates] *= -1.;
-   //}
-    //CTCe
   }
 }
 
+void getCharges(string filename, Molecule *mol, int nstates, int a, int b, string spin) {
+  ifstream infile;
+  infile.open(filename.c_str());
+  char tempc[1000];
+  string temps;
+  
+  //skip natoms on first line
+  infile.getline(tempc,1000);
+  
+  for (int j=0; j<mol->natoms; j++) {
+    infile.getline(tempc,1000);
+    temps = strtok(tempc," ");
+    temps = strtok(NULL," ");
+    mol->atoms[j].type = temps;
+
+    /** Get atomic positions **/
+    temps = strtok(NULL," ");
+    mol->atoms[j].pos[0] = atof(temps.c_str());
+    mol->atoms[j].ipos[0] = atof(temps.c_str());
+    temps = strtok(NULL," ");
+    mol->atoms[j].pos[1] = atof(temps.c_str());
+    mol->atoms[j].ipos[1] = atof(temps.c_str());
+    temps = strtok(NULL," ");
+    mol->atoms[j].pos[2] = atof(temps.c_str());
+    mol->atoms[j].ipos[2] = atof(temps.c_str());
+    temps = strtok(NULL," ");
+    
+    /** Get the charges **/
+    /** if a projection calculation, and alpha/beta spins are desired **/
+    if (spin.compare(0,5,"alpha",0,5) == 0) {
+      temps = strtok(NULL," ");
+    } else if (spin.compare(0,4,"beta",0,4) == 0) {
+      temps = strtok(NULL," ");
+      temps = strtok(NULL," ");
+    }
+    mol->atoms[j].charges[a+b*nstates] = atof(temps.c_str());
+    mol->atoms[j].charges[b+a*nstates] = atof(temps.c_str());
+  
+    mol->atoms[j].spos[0] = sqrt(mol->atoms[j].pos[0]*mol->atoms[j].pos[0]
+                                 + mol->atoms[j].pos[1]*mol->atoms[j].pos[1] 
+                                 + mol->atoms[j].pos[2]*mol->atoms[j].pos[2]);
+    mol->atoms[j].spos[1] = acos(mol->atoms[j].pos[2]/mol->atoms[j].spos[0]);
+    mol->atoms[j].spos[2] = atan(mol->atoms[j].pos[1]/mol->atoms[j].pos[0]);
+  }
+}
 
 
 #endif

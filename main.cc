@@ -18,32 +18,41 @@ int main(int argc, char **argv) {
   ifstream efile;
   efile.open(argv[1]);
   char tmpc[1000];
-  cout<<"*** Start Input file ***"<<endl;
+  
+  cout<<"*** Start Echo Input file ***"<<endl;
+  
   while (!efile.eof()) {
     efile.getline(tmpc,1000);
     cout<<tmpc<<endl;
   }
   efile.close();
-  cout<<"*** End Input File ***"<<endl;
+  
+  cout<<"*** End Echo Input File ***"<<endl;
   
   /** Read input com file **/
+  cout<<"*** Parsing input file ***"<<endl;
   Reader read(argv[1]);
 
   /** Initialize molecules **/
+  cout<<"*** Initializing molecules ***"<<endl;
   mol = initialize(read);
-  
+
   /** Set COM before initial translation**/
-  for (int i=0; i<read.calc.molecules; i++) {
-    mol[i].setCom();
+  if (read.calc.itype != 5) {
+    for (int i=0; i<read.calc.molecules; i++) {
+      mol[i].setCom();
+    }
   }
  
  /** set up printer and output files **/
+  cout<<"*** Setting up output files ***"<<endl;
   Print print(mol);
   ofstream outfile2,pdafile;
   outfile2.open(mol[0].outputfilename.c_str());
   outfile2.precision(16);
 
-  /** Set up the grid data **/
+  /** Set up the spatial grid data for translating monomers **/
+  cout<<"*** Setting up translation grid ***"<<endl;
   int griddim = 3;
   for (int i=0; i<read.calc.molecules; i++) {
     mol[i].grid = new Grid[griddim];
@@ -82,32 +91,35 @@ int main(int argc, char **argv) {
   for (int i=0; i<read.calc.molecules; i++) {
     totalAtoms += mol[i].natoms;
   }
-  posout<<totalAtoms<<endl;
-  posout<<"Initial configuration"<<endl;
-  for (int i=0; i<read.calc.molecules; i++) {
-    for (int j=0; j<mol[i].natoms; j++) {
-      posout<<mol[i].atoms[j].type<<" ";
-      for (int k=0; k<3; k++) {
-        posout<<mol[i].atoms[j].pos[k]<<" ";
+  if (read.calc.itype != 5) {
+    cout<<"*** Printing initial configuration to: initpos.xyz ***"<<endl;
+    posout<<totalAtoms<<endl;
+    posout<<"Initial configuration"<<endl;
+    for (int i=0; i<read.calc.molecules; i++) {
+      for (int j=0; j<mol[i].natoms; j++) {
+        posout<<mol[i].atoms[j].type<<" ";
+        for (int k=0; k<3; k++) {
+          posout<<mol[i].atoms[j].pos[k]<<" ";
+        }
+        posout<<endl;
       }
-      posout<<endl;
     }
   }
- 
+  posout.close();
+
   /** Set indicies matrix (for SSSF) **/
-
+  
   int nindex=1;
-
   for (int i=0; i<read.calc.molecules; i++) {
     nindex *= mol[i].nstates;
   }
-  
   int3 = new double[nindex*nindex];
   intham = new double[nindex*nindex];
-
   mol[0].nindices = nindex;
-  setIndices(mol,mol[0].nmol,nindex);
-  cout<<"** State indices **"<<endl;
+  if (read.calc.itype != 5) {
+    setIndices(mol,mol[0].nmol,nindex);
+    cout<<"** State indices **"<<endl;
+  }
 /*  for (int i=0; i<nindex; i++) 
     for (int j=0; j<mol[0].nmol; j++) 
       cout<<"ket "<<i<<" mol "<<j<<" = "<<mol[0].indices[j+i*mol[0].nmol]<<endl;
@@ -122,20 +134,21 @@ int main(int argc, char **argv) {
   double energies[nindex];
   double vec[nindex],vec2[nindex];
 
-  /** only do this if not fret or pda **/
-  if ((read.calc.itype != 1) && (read.calc.itype != 4)) {
-  for (int i=0; i<nindex; i++) {
-    energies[i] = 0.;
-    for (int m=0; m<mol[0].nmol; m++) {
+  /** only do this if not fret, pda, or projection **/
+  if ((read.calc.itype != 1) && (read.calc.itype != 4)
+      && (read.calc.itype != 5)) {
+    for (int i=0; i<nindex; i++) {
+      energies[i] = 0.;
+      for (int m=0; m<mol[0].nmol; m++) {
         energies[i] += mol[m].excenergy[mol[0].indices[m+i*mol[0].nmol]];
-    }
+      }
     energies[0] = 0.;
-
     cout<<"energies "<<i<<" "<<energies[i]<<endl;
   }
 
   /** Create unfiltered Coulomb matrix **/
-  createCoulomb3(mol,coul);
+  if (read.calc.itype != 5) {
+    createCoulomb3(mol,coul);
   /** Filter Coulomb Matrix for energy conservation **/
   for (int i=0; i<nindex; i++) {
     //coul.int3[i+i*nindex] += energies[i];
@@ -171,6 +184,7 @@ int main(int argc, char **argv) {
     }
   }
   }
+  } //end (not projection calculation)
 /*******************  Done Setting up molecules *****************************/
 
   /************************************
@@ -182,6 +196,23 @@ int main(int argc, char **argv) {
   double coupling2;
 
   switch (read.calc.itype) {
+
+    /**************************************
+     *    Transition charge projection
+     **************************************/
+    case 5:
+    {
+      cout<<"Performing a transition charge projection now."<<endl;
+      cout<<"Projection written to "<<mol[0].outputfilename<<endl;
+    
+      double *p = projecttq(mol);
+      
+      for (int i=0; i<mol[0].natoms; i++) {
+        cout<<i<<" "<<p[i]<<endl;
+      }
+    }
+
+    break;
     
     
     /**************************************
