@@ -24,6 +24,84 @@ bool DEBUG = false;
 /********************************************************
  * Functions
  * *******************************************************/
+
+/** Calculates the distance-independent Coulomb interaction
+ * for projection calculations
+ */
+double getCoulombNoDist(Molecule *mol, int I, int J, int i, int j, int k, int l) {
+  double res, sum, temp, pos[3];
+  temp = 0.;
+  for (int ii=0; ii<mol[I].natoms; ii++) {
+    for (int jj=0; jj<mol[J].natoms; jj++) {
+      temp += mol[I].atoms[ii].charges[i+j*mol[I].nstates] 
+            * mol[J].atoms[jj].charges[k+l*mol[J].nstates];
+    }
+  }
+
+  return temp;
+}
+
+/**** Scale transition charges for one electron transfer ****/
+void scaletq(Molecule *mol) {
+  cout<<"Scaling transition charges"<<endl;
+  double sump1 = 0.;
+  double summ1 = 0.;
+  double sump2 = 0.;
+  double summ2 = 0.;
+
+  for (int i=0; i<mol[0].natoms; i++) {
+    if (mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates] < 0) {
+      summ1 += mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates];
+    }
+    else if (mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates] > 0)
+      sump1 += mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates];
+    if (mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates] < 0)
+      summ2 += mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates];
+    else if (mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates] > 0)
+      sump2 += mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates];
+
+  }
+
+  cout<<"charges "<<summ1<<" "<<sump1<<" "<<summ2<<" "<<sump2<<endl;
+  double delta = 1.0e-5;
+  
+  if (((summ1+sump1) >= delta) || ((summ2+sump2) >= delta)) {
+    cout<<"positive and negative charges unequal, exiting"<<endl;
+    exit(0);
+  }
+
+/** Check sign for scaling to make sure electron/holes match for diff mol **/
+  for (int i=0; i<mol[0].natoms; i++) {
+    mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates] /= sqrt(2)/sump2;
+    mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates] /= -sqrt(2)/sump1;
+  }
+
+/*
+ * Checking sum
+ *
+  sump1=0.;
+  summ1=0.;
+  sump2=0.;
+  summ2=0.;
+  for (int i=0; i<mol[0].natoms; i++) {
+    if (mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates] < 0) {
+      summ1 += mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates];
+    }
+    else if (mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates] > 0)
+      sump1 += mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates];
+    if (mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates] < 0)
+      summ2 += mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates];
+    else if (mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates] > 0)
+      sump2 += mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates];
+
+  }
+
+  cout<<"charges "<<summ1<<" "<<sump1<<" "<<summ2<<" "<<sump2<<endl;
+*/
+}
+
+
+
 /** Calculates the absolute transition charge difference between
  * different excited states */
 
@@ -36,9 +114,11 @@ double *projecttq(Molecule *mol) {
 
       proj = abs((mol[1].atoms[i].charges[0+mol[1].fstate*mol[1].nstates]
                       - mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates])
-                      );// mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates]);
+                   )  ;//  / mol[0].atoms[i].charges[0+mol[0].fstate*mol[0].nstates]);
     temp[i] = proj;
+    sum += proj;
   }
+  cout<<"projection = "<<1.-sum<<endl;
   return temp;
 }
 

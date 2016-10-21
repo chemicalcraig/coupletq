@@ -202,14 +202,32 @@ int main(int argc, char **argv) {
      **************************************/
     case 5:
     {
+      double sum = 0.;
       cout<<"Performing a transition charge projection now."<<endl;
       cout<<"Projection written to "<<mol[0].outputfilename<<endl;
-    
-      double *p = projecttq(mol);
       
+      /** Scale tq's **/
+      scaletq(mol);
+
+      /** Absolute difference in tq by atom **/
+      double *p = projecttq(mol);
       for (int i=0; i<mol[0].natoms; i++) {
-        cout<<i<<" "<<p[i]<<endl;
+        sum += p[i];
       }
+      sum /= mol[0].natoms;
+      cout<<"total sum = "<<sum<<", "<<1.-sum*mol[0].natoms<<
+        " "<<sum*mol[0].natoms<<endl;
+    
+      /** Distance-independent Coulomb interaction **/
+      double interaction = getCoulombNoDist(mol,0,1,0,1,0,1);
+
+      cout<<"interaction = "<<interaction*27211<<" meV"<<endl;
+
+      /** Write the projection charges to file **/
+      for (int i=0; i<mol[0].natoms; i++) {
+        print.appendData2d(outfile2,i,p[i]);
+      }
+
     }
 
     break;

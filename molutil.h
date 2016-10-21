@@ -274,6 +274,7 @@ void getCharges(string filename, Molecule *mol, int nstates, int a, int b) {
                                  + mol->atoms[j].pos[2]*mol->atoms[j].pos[2]);
     mol->atoms[j].spos[1] = acos(mol->atoms[j].pos[2]/mol->atoms[j].spos[0]);
     mol->atoms[j].spos[2] = atan(mol->atoms[j].pos[1]/mol->atoms[j].pos[0]);
+  
   }
 }
 

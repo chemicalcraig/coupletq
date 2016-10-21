@@ -86,6 +86,7 @@ Molecule *initialize(Reader r) {
                 r.mol[i].nstates,r.mol[i].cf[j].i,
                 r.mol[i].cf[j].f);
       } else {
+        cout<<"Spin-specific charges, "<<r.mol[i].cf[0].spin<<endl;
         getCharges(r.mol[i].cf[j].file,&mol[i],
                 r.mol[i].nstates,r.mol[i].cf[j].i,
                 r.mol[i].cf[j].f,r.mol[i].cf[0].spin);
